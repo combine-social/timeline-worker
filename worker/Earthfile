@@ -1,0 +1,22 @@
+VERSION 0.7
+
+build:
+  FROM rust:1.69
+  WORKDIR /app
+  COPY . .
+	RUN make dep
+	RUN cargo test
+	RUN cargo build --release
+	RUN cargo strip
+  SAVE ARTIFACT target/release/worker /worker/bin
+
+all:
+  BUILD +build
+  FROM debian:bullseye-slim
+  # RUN apt-get update && \
+  #   apt-get install -y extra-runtime-dependencies && \
+  #   rm -rf /var/lib/apt/lists/*
+  WORKDIR /app
+  COPY +build/worker/bin .
+  CMD ["/app/worker"]
+  SAVE IMAGE cyborch/toottail-worker:latest

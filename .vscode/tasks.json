@@ -1,0 +1,21 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build worker",
+      "command": "cargo",
+      "args": [
+        "build"
+      ],
+      "type": "shell",
+      "options": {
+        "cwd": "${workspaceFolder}/worker"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "focus": true
+      }
+    },
+  ]
+}
