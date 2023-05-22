@@ -1,10 +1,18 @@
 VERSION 0.7
 
+INSTALL_DEPS:
+  COMMAND
+  ENV DEBIAN_FRONTEND=noninteractive
+  RUN apt-get update && \
+    apt-get install -y libpq && \
+    rm -rf /var/lib/apt/lists/*
+
 build:
   FROM rust:1.69
   WORKDIR /app
   COPY . .
-	RUN make dep
+  DO +INSTALL_DEPS
+  RUN make dep
 	RUN cargo test
 	RUN cargo build --release
 	RUN cargo strip
@@ -13,9 +21,7 @@ build:
 all:
   BUILD +build
   FROM debian:bullseye-slim
-  # RUN apt-get update && \
-  #   apt-get install -y extra-runtime-dependencies && \
-  #   rm -rf /var/lib/apt/lists/*
+  DO +INSTALL_DEPS
   WORKDIR /app
   COPY +build/worker/bin .
   CMD ["/app/worker"]

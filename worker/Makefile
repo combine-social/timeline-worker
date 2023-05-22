@@ -1,10 +1,11 @@
 .PHONY: dep test all
 
 dep:
-	cargo install sqlx-cli cargo-strip
+	cargo install cargo-strip
+	cargo install diesel_cli --no-default-features --features postgres
 
-all: dep	
+all:
 	cargo build
 
-test: dep
+test:
 	cargo test
