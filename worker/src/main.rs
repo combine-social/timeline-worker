@@ -1,10 +1,12 @@
 mod repository;
-use repository::registrations;
+use repository::tokens;
 
 #[async_std::main]
 async fn main() {
-    let connection = &mut repository::establish_connection().await;
-    let registrations = registrations::find_all(connection);
+    let pool = repository::establish_connection()
+        .await
+        .expect("Error connecting to db");
+    let registrations = tokens::find_all(&pool).await;
     for reg in registrations {
         println!("Got: {:?}", reg);
     }

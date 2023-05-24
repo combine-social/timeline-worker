@@ -12,7 +12,7 @@
       "args": [],
       "cwd": "${workspaceFolder}/worker",
       "env": {
-        "DB_URL": "postgresql://root:test@localhost:5432/test"
+        "DATABASE_URL": "postgresql://root:test@localhost:5432/test"
       },
       "preLaunchTask": "build worker"
     }

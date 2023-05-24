@@ -1,12 +1,11 @@
+use sqlx::{Error, Pool, Postgres};
+
 use self::models::*;
-use diesel::prelude::*;
 
 pub mod models;
 
-pub fn find_all(connection: &mut PgConnection) -> Vec<Registration> {
-  use super::schema::registrations::dsl::*;
-
-  registrations
-    .load::<Registration>(connection)
-    .expect("Error loading registrations")
+pub async fn find_all(pool: &Pool<Postgres>) -> Result<Vec<Registration>, Error> {
+    sqlx::query_as!(Registration, "select * from registrations")
+        .fetch_all(pool)
+        .await
 }

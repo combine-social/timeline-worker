@@ -1,15 +1,15 @@
-use diesel::pg::PgConnection;
-use diesel::prelude::*;
 use dotenvy::dotenv;
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 use std::env;
 
 pub mod registrations;
-pub mod schema;
+pub mod tokens;
 
-pub async fn establish_connection() -> PgConnection {
+pub async fn establish_connection() -> Result<Pool<Postgres>, sqlx::Error> {
     dotenv().ok();
-
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+    PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await
 }

@@ -1,3 +1,75 @@
 {
-  "db": "PostgreSQL"
+  "db": "PostgreSQL",
+  "43c414c8998000f7e2f4c7149da221034a9cf53baedccd6d900a8867318a1ecd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "instance_url",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "registration_id",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "name",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "website",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "redirect_uri",
+          "ordinal": 5,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "client_id",
+          "ordinal": 6,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "client_secret",
+          "ordinal": 7,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "vapid_key",
+          "ordinal": 8,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "nonce",
+          "ordinal": 9,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        true,
+        true,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "select * from registrations"
+  }
 }
