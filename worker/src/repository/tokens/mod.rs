@@ -1,3 +1,5 @@
+use futures::stream::StreamExt; // enable map on stream of futures
+use futures::Stream;
 use sqlx::types::JsonRawValue;
 use sqlx::{postgres::PgRow, FromRow, Pool, Postgres, Row};
 
@@ -5,7 +7,7 @@ use self::models::*;
 
 pub mod models;
 
-pub async fn find_all(pool: &Pool<Postgres>) -> Vec<Result<Token, sqlx::Error>> {
+pub fn find_all(pool: &Pool<Postgres>) -> impl Stream<Item = Token> {
     sqlx::query(
         "
         select
@@ -16,12 +18,9 @@ pub async fn find_all(pool: &Pool<Postgres>) -> Vec<Result<Token, sqlx::Error>> 
           on r.id = t.registration_id
   ",
     )
-    .fetch_all(pool)
-    .await
-    .unwrap_or(vec![])
-    .into_iter()
-    .map(|row| Token::from_row(&row))
-    .collect()
+    .fetch(pool)
+    .map(|row| Token::from_row(&row.expect("PgRow unwrap error")))
+    .map(|result| result.expect("Token::from_row error"))
 }
 
 impl FromRow<'_, PgRow> for Token {
