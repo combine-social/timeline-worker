@@ -10,6 +10,9 @@
           "ignoreFailures": false
         }
       ],
+    },
+    "[rust]": {
+      "editor.tabSize": 4
     }
   },
   "rust-analyzer.showUnlinkedFileNotification": false
