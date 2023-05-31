@@ -9,7 +9,7 @@
       ],
       "type": "shell",
       "options": {
-        "cwd": "${workspaceFolder}/worker"
+        "cwd": "${workspaceFolder}"
       },
       "presentation": {
         "reveal": "always",

@@ -8,9 +8,9 @@
       "name": "Launch worker",
       "type": "lldb",
       "request": "launch",
-      "program": "${workspaceFolder}/worker/target/debug/worker",
+      "program": "${workspaceFolder}/target/debug/worker",
       "args": [],
-      "cwd": "${workspaceFolder}/worker",
+      "cwd": "${workspaceFolder}",
       "env": {
         "DATABASE_URL": "postgresql://root:test@localhost:5432/test"
       },
