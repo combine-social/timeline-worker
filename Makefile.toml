@@ -1,0 +1,55 @@
+[env]
+IMAGE = "ghcr.io/combine-social/timeline-worker"
+TAG = "latest"
+
+[tasks.earthly]
+script = [
+  "brew install earthly",
+  "earthly bootstrap"
+]
+
+[tasks.earthly.linux]
+script = [
+  "sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'",
+  "earthly bootstrap --with-autocomplete"
+]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.build]
+command = "cargo"
+args = ["build"]
+
+[tasks.release]
+command = "cargo"
+args = ["build", "--release"]
+dependencies = ["clean"]
+
+[tasks.test]
+command = "cargo"
+args = ["test"]
+
+[tasks.strip]
+install_crate = "cargo-strip"
+command = "cargo"
+args = ["strip"]
+
+[tasks.all]
+dependencies = [
+  "test",
+  "release",
+  "strip"
+]
+
+[tasks.image]
+script = [
+  "earthly +all --image=${IMAGE} --tag=${TAG}"
+]
+
+[tasks.push]
+dependencies = [ "image" ]
+script = [
+  "earthly --push +all --image=${IMAGE} --tag=${TAG}"
+]

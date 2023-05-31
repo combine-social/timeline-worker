@@ -12,17 +12,17 @@ build:
   WORKDIR /app
   COPY . .
   DO +INSTALL_DEPS
-  RUN make dep
-	RUN cargo test
-	RUN cargo build --release
-	RUN cargo strip
+  RUN cargo install cargo-make
+	RUN cargo make all
   SAVE ARTIFACT target/release/worker /worker/bin
 
 all:
+  ARG image
+  ARG tag
   BUILD +build
   FROM debian:bullseye-slim
   DO +INSTALL_DEPS
   WORKDIR /app
   COPY +build/worker/bin .
   CMD ["/app/worker"]
-  SAVE IMAGE cyborch/toottail-worker:latest
+  SAVE IMAGE --push $image:$tag

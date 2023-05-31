@@ -20,19 +20,9 @@ To get started, first install the build dependencies as described below.
 
 ## Build Dependencies
 
-The front-end of this project is built using [Cargo](https://doc.rust-lang.org/cargo/).
-Images are built using [Earthly](https://earthly.dev).
+This project is built using [Cargo](https://doc.rust-lang.org/cargo/).
 
 ### Installation
-
-To install Earthly run:
-
-```
-brew install earthly && earthly bootstrap
-```
-
-See installation instructions for other platforms at the Earthly
-[Getting Started](https://earthly.dev/get-earthly) page.
 
 To install Rust and Cargo, run (and follow the prompts):
 
@@ -41,10 +31,10 @@ brew install rustup-init
 rustup-init
 ```
 
-To install all dependencies and build, run make:
+Build is performed using [cargo-make](https://crates.io/crates/cargo-make/):
 
 ```
-make
+cargo install cargo-make
 ```
 
 ## Runtime Dependencies
@@ -73,28 +63,31 @@ This will start the following services:
  * RabbitMQ, including [management UI](http://localhost:15672)
  * PostgreSQL, listening on port 5432 for easy reference if you have a psql client avaiable.
 
-To test that everything is running smoothly, browse to [localhost:8080](http://localhost:8080).
-
 ## Building for production
 
-**Caveat:** The build files assume that images are built and pushed to
-`cyborch/toottail-<service_name>:latest`. The individual `Earthly` files can be
-updated to reflect wherever you want to build and push images to.
+**Caveat:** The build files assume that image is built and pushed to
+`ghcr.io/combine-social/timeline-worker:latest`.
 
 To build the images for production use, run:
 
 ```
-npm run docker:build
+cargo make image
 ```
 
-To build and push (assuming that you have access to a Docker Hub account and
-are logged), run:
+The image name and tag can be overridden with:
 
 ```
-npm run docker:push
+cargo make --env IMAGE="my-image" --env TAG="1.0"
 ```
 
-This will implicitly run `docker:build` if needed.
+To build and push, run:
+
+```
+cargo make push
+```
+
+You can add the same `IMAGE` and `TAG` environment variables to `cargo make push`
+as you can to `cargo make image`.
 
 ## Contributing
 
