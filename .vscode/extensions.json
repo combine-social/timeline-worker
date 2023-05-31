@@ -1,5 +1,7 @@
 {
   "recommendations": [
-    "vadimcn.vscode-lldb"
+    "vadimcn.vscode-lldb",
+    "earthly.earthfile-syntax-highlighting",
+    "bungcip.better-toml"
   ]
 }
