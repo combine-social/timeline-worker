@@ -9,11 +9,16 @@
           "text": "-enable-pretty-printing",
           "ignoreFailures": false
         }
-      ],
-    },
-    "[rust]": {
-      "editor.tabSize": 4
+      ]
     }
+  },
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  "[rust]": {
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "file"
   },
   "rust-analyzer.showUnlinkedFileNotification": false
 }
