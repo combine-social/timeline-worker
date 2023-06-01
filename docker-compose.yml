@@ -9,11 +9,7 @@ services:
       - -c
       - |
         echo "Installing dependencies and starting worker..."
-        apt-get update && \
-          apt-get install -y libpq && \
-          rm -rf /var/lib/apt/lists/*
         cd /app
-        make dep
         cargo run
     environment:
       - REDIS_URL=redis://redis
