@@ -1,4 +1,4 @@
-use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
+use sqlx::{pool::PoolConnection, postgres::PgPoolOptions, Pool, Postgres};
 use std::env;
 
 pub mod registrations;
@@ -16,10 +16,14 @@ fn max_connections() -> u32 {
         .unwrap_or(5)
 }
 
-pub async fn establish_connection() -> Option<Pool<Postgres>> {
+pub async fn create_pool() -> Option<Pool<Postgres>> {
     PgPoolOptions::new()
         .max_connections(max_connections())
         .connect(&database_url())
         .await
         .ok()
+}
+
+pub async fn connect(pool: &Pool<Postgres>) -> Option<PoolConnection<Postgres>> {
+    pool.acquire().await.ok()
 }

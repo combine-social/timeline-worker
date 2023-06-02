@@ -1,14 +1,15 @@
 use futures::stream::StreamExt; // enable map on stream of futures
 use futures::Stream;
+use sqlx::pool::PoolConnection;
 use sqlx::types::JsonRawValue;
-use sqlx::{postgres::PgRow, FromRow, Pool, Postgres, Row};
+use sqlx::{postgres::PgRow, FromRow, Postgres, Row};
 
 use self::models::*;
 use super::registrations::models::*;
 
 pub mod models;
 
-pub fn find_all(pool: &Pool<Postgres>) -> impl Stream<Item = Token> {
+pub fn find_all<'a>(con: &'a mut PoolConnection<Postgres>) -> impl Stream<Item = Token> + 'a {
     sqlx::query(
         "
                 select
@@ -19,7 +20,7 @@ pub fn find_all(pool: &Pool<Postgres>) -> impl Stream<Item = Token> {
                     on r.id = t.registration_id
             ",
     )
-    .fetch(pool)
+    .fetch(con)
     .map(|row| Token::from_row(&row.expect("PgRow unwrap error")))
     .map(|result| result.expect("Token::from_row error"))
 }
