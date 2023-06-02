@@ -11,13 +11,13 @@ pub mod models;
 pub fn find_all(pool: &Pool<Postgres>) -> impl Stream<Item = Token> {
     sqlx::query(
         "
-        select
-          t.*,
-          to_json(r.*) as registration
-        from registrations r 
-        join tokens t 
-          on r.id = t.registration_id
-  ",
+                select
+                    t.*,
+                    to_json(r.*) as registration
+                from registrations r 
+                join tokens t 
+                    on r.id = t.registration_id
+            ",
     )
     .fetch(pool)
     .map(|row| Token::from_row(&row.expect("PgRow unwrap error")))
