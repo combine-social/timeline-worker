@@ -1,3 +1,4 @@
+mod cache;
 mod repository;
 use dotenvy::dotenv;
 use futures_util::StreamExt;
@@ -17,6 +18,9 @@ async fn main() {
     let pool = repository::establish_connection()
         .await
         .expect("Error connecting to db");
+    let cache = cache::establish_connection()
+        .await
+        .expect("Error connecting to cache");
     let tokens = &mut tokens::find_all(&pool);
     while let Some(token) = tokens.next().await {
         println!("Got: {:?}", token);

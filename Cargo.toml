@@ -12,4 +12,8 @@ serde_json = { version = "1.0", features = ["raw_value"] }
 serde_derive = "1.0"
 futures = "0.3.28"
 futures-util = "0.3.28"
+redis = { version = "0.23.0", features = ["async-std-comp", "json"] }
+redis-macros = "0.1.1"
+serde-redis = "0.13.0"
+redis-derive = "0.1.7"
 
