@@ -4,10 +4,22 @@ use std::env;
 pub mod registrations;
 pub mod tokens;
 
-pub async fn establish_connection() -> Result<Pool<Postgres>, sqlx::Error> {
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+fn database_url() -> String {
+    env::var("DATABASE_URL").unwrap_or("postgres://localhost/test".to_owned())
+}
+
+fn max_connections() -> u32 {
+    env::var("DATABASE_MAX_CONNECTIONS")
+        .unwrap_or("5".to_owned())
+        .to_string()
+        .parse()
+        .unwrap_or(5)
+}
+
+pub async fn establish_connection() -> Option<Pool<Postgres>> {
     PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
+        .max_connections(max_connections())
+        .connect(&database_url())
         .await
+        .ok()
 }
