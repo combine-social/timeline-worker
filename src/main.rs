@@ -12,7 +12,7 @@ fn load_env() {
     }
 }
 
-#[async_std::main]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() {
     load_env();
     let pool = repository::establish_connection()

@@ -5,15 +5,12 @@ edition = "2021"
 
 [dependencies]
 dotenvy = "0.15"
-async-std = { version = "1.12.0", features = ["attributes"] }
-sqlx = { version = "0.6", features = [ "runtime-async-std-native-tls", "postgres", "json", "offline" ] }
+sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "postgres", "json", "offline" ] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 serde_derive = "1.0"
 futures = "0.3.28"
 futures-util = "0.3.28"
-redis = { version = "0.23.0", features = ["async-std-comp", "json"] }
-redis-macros = "0.1.1"
-serde-redis = "0.13.0"
-redis-derive = "0.1.7"
+redis-async = "0.16.0"
+tokio = { version = "1.28.2", features = ["full"] }
 
