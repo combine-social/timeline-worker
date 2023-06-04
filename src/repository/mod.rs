@@ -16,14 +16,13 @@ fn max_connections() -> u32 {
         .unwrap_or(5)
 }
 
-pub async fn create_pool() -> Option<Pool<Postgres>> {
+pub async fn create_pool() -> Result<Pool<Postgres>, sqlx::Error> {
     PgPoolOptions::new()
         .max_connections(max_connections())
         .connect(&database_url())
         .await
-        .ok()
 }
 
-pub async fn connect(pool: &Pool<Postgres>) -> Option<PoolConnection<Postgres>> {
-    pool.acquire().await.ok()
+pub async fn connect(pool: &Pool<Postgres>) -> Result<PoolConnection<Postgres>, sqlx::Error> {
+    pool.acquire().await
 }

@@ -25,19 +25,16 @@ pub fn find_all<'a>(con: &'a mut PoolConnection<Postgres>) -> impl Stream<Item =
     .map(|result| result.expect("Token::from_row error"))
 }
 
-fn default_json() -> Box<JsonRawValue> {
-    JsonRawValue::from_string(String::from("{}")).ok().unwrap()
+fn raw_value<'a>(row: &'a PgRow, key: &str) -> Result<&'a JsonRawValue, sqlx::Error> {
+    row.try_get(key)
 }
 
-fn raw_value<'a>(row: &'a PgRow, key: &str) -> Option<&'a JsonRawValue> {
-    row.try_get(key).ok()
-}
-
-fn result(row: &PgRow) -> Result<Registration, serde_json::Error> {
-    let default = default_json();
-    let json = raw_value(&row, "registration").unwrap_or(&default);
+fn result(row: &PgRow) -> Result<Registration, Box<dyn std::error::Error>> {
+    let json =
+        raw_value(&row, "registration").map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
     // FIXME: skip the to_string middleman
     serde_json::from_str(json.to_string().as_str())
+        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })
 }
 
 impl FromRow<'_, PgRow> for Token {
@@ -53,6 +50,7 @@ impl FromRow<'_, PgRow> for Token {
                 fail_count: row.try_get("fail_count")?,
                 registration,
             }),
+            // ColumnNotFound was the least bad error I could find to map to
             Err(error) => Err(sqlx::Error::ColumnNotFound(error.to_string())),
         }
     }
