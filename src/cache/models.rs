@@ -1,9 +1,9 @@
-use redis_derive::{FromRedisValue, ToRedisArgs};
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, FromRedisValue, ToRedisArgs)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct StatusCacheMetaData {
-    original: String,
-    created_at: String,
-    index: i32,
-    level: i32,
+    pub original: String,
+    pub created_at: String,
+    pub index: i32,
+    pub level: i32,
 }
