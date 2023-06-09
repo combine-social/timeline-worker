@@ -1,8 +1,7 @@
 use redis::aio::Connection;
 use redis::{AsyncCommands, Client, RedisError};
+use serde::{Deserialize, Serialize};
 use std::env;
-
-use self::models::StatusCacheMetaData;
 
 pub mod models;
 
@@ -28,24 +27,33 @@ async fn get_string(
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })
 }
 
-pub async fn get_meta(
+pub async fn get<T>(
     connection: &mut Connection,
     key: &String,
-) -> Result<StatusCacheMetaData, Box<dyn std::error::Error>> {
+) -> Result<T, Box<dyn std::error::Error>>
+where
+    T: for<'a> Deserialize<'a> + Sized,
+{
     let json = get_string(connection, key).await?;
     serde_json::from_str(&json).map_err(|e| -> Box<dyn std::error::Error> { e.into() })
 }
 
-fn meta_to_string(meta: &StatusCacheMetaData) -> Result<String, Box<dyn std::error::Error>> {
+fn to_string<T>(meta: &T) -> Result<String, Box<dyn std::error::Error>>
+where
+    T: Serialize + Sized,
+{
     serde_json::to_string(meta).map_err(|e| -> Box<dyn std::error::Error> { e.into() })
 }
 
-pub async fn set_meta(
+pub async fn set<T>(
     connection: &mut Connection,
     key: &String,
-    value: &StatusCacheMetaData,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let json = meta_to_string(value)?;
+    value: &T,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+    T: Serialize + Sized,
+{
+    let json = to_string(value)?;
     connection
         .set(key, json)
         .await
