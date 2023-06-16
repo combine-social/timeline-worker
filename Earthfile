@@ -1,7 +1,7 @@
 VERSION 0.7
 
 build:
-  FROM rust:1.69
+  FROM rust:1.70
   WORKDIR /app
   COPY . .
   RUN cargo install cargo-make
