@@ -8,10 +8,26 @@ script = [
   "earthly bootstrap"
 ]
 
+[tasks.libpq]
+script = [
+  "brew install libpq"
+]
+
+[tasks.libpq.linux]
+script = [
+  "apt-get install -y libpq"
+]
+
 [tasks.earthly.linux]
 script = [
   "sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'",
   "earthly bootstrap --with-autocomplete"
+]
+
+[tasks.dep]
+dependencies = [
+  "libpq",
+  "earthly"
 ]
 
 [tasks.clean]

@@ -11,8 +11,8 @@ users appearing in notifications, and making your instance fetch those messages.
 
 Specifically, this means that:
 
- * Replies to messages in your home timeline are fetched for up to 24 hours.
- * Old messages are fetched for users that appear in notifications for up to 24 hours.
+- Replies to messages in your home timeline are fetched for up to 24 hours.
+- Old messages are fetched for users that appear in notifications for up to 24 hours.
 
 # Development
 
@@ -37,13 +37,19 @@ Build is performed using [cargo-make](https://crates.io/crates/cargo-make/):
 cargo install cargo-make
 ```
 
+To install the build dependencies, run:
+
+```
+cargo make dep
+```
+
 ## Runtime Dependencies
 
 State is managed using [PostgreSQL](https://www.postgresql.org) and
 [Redis](https://redis.io), and queues are managed using
 [RabbitMQ](https://www.rabbitmq.com).
 
-Deployment can be done on any platform which has OCI image support. A 
+Deployment can be done on any platform which has OCI image support. A
 [docker compose](https://docs.docker.com/compose/) file is included for
 reference.
 
@@ -59,9 +65,9 @@ docker compose up
 
 This will start the following services:
 
- * Redis
- * RabbitMQ, including [management UI](http://localhost:15672)
- * PostgreSQL, listening on port 5432 for easy reference if you have a psql client avaiable.
+- Redis
+- RabbitMQ, including [management UI](http://localhost:15672)
+- PostgreSQL, listening on port 5432 for easy reference if you have a psql client avaiable.
 
 ## Building for production
 
