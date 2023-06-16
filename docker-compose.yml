@@ -1,26 +1,5 @@
 version: "3.9"
 services:
-  worker:
-    image: rust:1.69
-    volumes:
-      - ".:/app"
-    command:
-      - /bin/sh
-      - -c
-      - |
-        echo "Installing dependencies and starting worker..."
-        cd /app
-        cargo run
-    environment:
-      - REDIS_URL=redis://redis
-      - DB_URL=postgresql://root:test@db:5432/test
-      - QUEUE_URL=amqp://rabbitmq
-      - WORKER_ID=1
-    depends_on:
-      - db
-      - rabbitmq
-      - redis
-
   redis:
     image: "redis:alpine"
     ports:
