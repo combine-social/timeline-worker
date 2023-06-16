@@ -32,7 +32,6 @@ fn raw_value<'a>(row: &'a PgRow, key: &str) -> Result<&'a JsonRawValue, sqlx::Er
 fn result(row: &PgRow) -> Result<Registration, Box<dyn std::error::Error>> {
     let json =
         raw_value(&row, "registration").map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
-    // FIXME: skip the to_string middleman
     serde_json::from_str(json.to_string().as_str())
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })
 }
