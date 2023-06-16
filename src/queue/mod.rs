@@ -19,7 +19,7 @@ pub struct Connection {
 }
 
 fn url() -> String {
-    env::var("REDIS_URL").unwrap_or("amqp://localhost".to_owned())
+    env::var("QUEUE_URL").unwrap_or("amqp://localhost".to_owned())
 }
 
 pub async fn connect() -> Result<Connection, amqprs::error::Error> {
