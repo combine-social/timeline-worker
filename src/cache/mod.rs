@@ -1,21 +1,22 @@
-pub use get::{get, has};
-use redis::aio::Connection;
-use redis::{Client, RedisError};
-pub use set::set;
-use std::env;
+#![cfg_attr(test, allow(dead_code))]
 
+#[cfg(not(test))]
+pub use connect::*;
+#[cfg(not(test))]
+pub use get::{get, has};
+#[cfg(not(test))]
+pub use set::set;
+
+mod connect;
 mod get;
-pub mod models;
 mod set;
 
-fn redis_url() -> String {
-    env::var("REDIS_URL").unwrap_or("redis://localhost".to_owned())
-}
+mod models;
+pub use models::*;
 
-fn client() -> Result<Client, RedisError> {
-    Client::open(redis_url())
-}
-
-pub async fn connect() -> Result<Connection, RedisError> {
-    client()?.get_async_connection().await
-}
+#[cfg(test)]
+mod mock;
+#[cfg(test)]
+pub use mock::*;
+#[cfg(test)]
+mod tests;

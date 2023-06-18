@@ -1,14 +1,13 @@
-use redis::aio::Connection;
 use serde::Serialize;
 
 use crate::{
-    cache::{has, set},
-    queue::{models::QueuedStatus, send, Connection as QueueConnection},
+    cache::{has, set, Cache},
+    queue::{models::QueuedStatus, send, Connection},
 };
 
 pub async fn send_if_not_cached<T>(
-    cache_connection: &mut Connection,
-    queue_connection: &QueueConnection,
+    cache: &mut Cache,
+    queue_connection: &Connection,
     queue_name: &String,
     key: &String,
     instance: &String,
@@ -18,8 +17,8 @@ pub async fn send_if_not_cached<T>(
 where
     T: Serialize + Sized,
 {
-    if !has(cache_connection, key).await? {
-        set(cache_connection, key, value, None).await?;
+    if !has(cache, key).await? {
+        set(cache, key, value, None).await?;
         send(
             queue_connection,
             queue_name,
