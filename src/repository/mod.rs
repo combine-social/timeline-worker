@@ -11,7 +11,6 @@ fn database_url() -> String {
 fn max_connections() -> u32 {
     env::var("DATABASE_MAX_CONNECTIONS")
         .unwrap_or("5".to_owned())
-        .to_string()
         .parse()
         .unwrap_or(5)
 }
