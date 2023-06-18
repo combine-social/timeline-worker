@@ -80,7 +80,7 @@ pub async fn next<T: for<'a> Deserialize<'a> + Sized + Send + Sync>(
 ) -> Result<Option<T>, Box<dyn std::error::Error>> {
     let result: Arc<Option<String>> = Arc::new(None);
     let consumer: StatusConsumer = StatusConsumer::new(false, result.clone());
-    let args = BasicConsumeArguments::new(&queue, "");
+    let args = BasicConsumeArguments::new(queue, "");
     connection
         .chan
         .basic_consume(consumer, args)
