@@ -53,6 +53,15 @@ Deployment can be done on any platform which has OCI image support. A
 [docker compose](https://docs.docker.com/compose/) file is included for
 reference.
 
+## Linting and Testing
+
+To lint and test, run:
+
+```
+cargo make lint
+cargo make test
+```
+
 ## Running the worker
 
 To run locally, for development purposes, the worker can be started on its
