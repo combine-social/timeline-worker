@@ -1,4 +1,4 @@
-use crate::repository::registrations::models::Registration;
+use crate::repository::registrations::Registration;
 
 #[derive(Debug)]
 pub struct Token {
