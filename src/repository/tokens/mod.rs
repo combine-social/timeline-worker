@@ -9,7 +9,7 @@ use super::registrations::models::*;
 
 pub mod models;
 
-pub fn find_all<'a>(con: &'a mut PoolConnection<Postgres>) -> impl Stream<Item = Token> + 'a {
+pub fn find_all(con: &mut PoolConnection<Postgres>) -> impl Stream<Item = Token> + '_ {
     sqlx::query(
         "
                 select
