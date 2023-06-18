@@ -34,6 +34,14 @@ async fn get_string(
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })
 }
 
+pub async fn has(
+    connection: &mut Connection,
+    key: &String,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let exists: u32 = connection.exists(key).await?;
+    Ok(exists != 0)
+}
+
 pub async fn get<T>(
     connection: &mut Connection,
     key: &String,
