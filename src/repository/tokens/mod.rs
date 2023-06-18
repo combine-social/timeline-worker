@@ -31,14 +31,14 @@ fn raw_value<'a>(row: &'a PgRow, key: &str) -> Result<&'a JsonRawValue, sqlx::Er
 
 fn result(row: &PgRow) -> Result<Registration, Box<dyn std::error::Error>> {
     let json =
-        raw_value(&row, "registration").map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
+        raw_value(row, "registration").map_err(|e| -> Box<dyn std::error::Error> { e.into() })?;
     serde_json::from_str(json.to_string().as_str())
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })
 }
 
 impl FromRow<'_, PgRow> for Token {
     fn from_row(row: &PgRow) -> sqlx::Result<Self> {
-        match result(&row) {
+        match result(row) {
             Ok(registration) => Ok(Self {
                 id: row.try_get("id")?,
                 username: row.try_get("username")?,
