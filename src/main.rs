@@ -1,28 +1,31 @@
+use std::process;
+
 mod cache;
+mod conditional_queue;
+mod queue;
 mod repository;
-use dotenvy::dotenv;
-use futures_util::StreamExt;
-use repository::tokens;
 
 fn load_env() {
-    if cfg!(debug) {
-        dotenvy::from_filename(".env.local").ok();
-    } else {
-        dotenv().ok();
-    }
+    dotenvy::from_filename(".env.local").ok();
+    dotenvy::from_filename_override(".env").ok();
 }
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     load_env();
-    let pool = repository::establish_connection()
-        .await
-        .expect("Error connecting to db");
-    let cache = cache::establish_connection()
-        .await
-        .expect("Error connecting to cache");
-    let tokens = &mut tokens::find_all(&pool);
-    while let Some(token) = tokens.next().await {
-        println!("Got: {:?}", token);
-    }
+    let db = repository::create_pool().await.unwrap_or_else(|err| {
+        println!("Error connecting to Postgres: {}", err);
+        process::exit(-1);
+    });
+    println!("⚡️[server]: DB connection up!");
+    let cache = cache::connect().await.unwrap_or_else(|err| {
+        println!("Error connecting to Redis: {}", err);
+        process::exit(-1);
+    });
+    println!("⚡️[server]: Cache connection up!");
+    let queue = queue::connect().await.unwrap_or_else(|err| {
+        println!("Error connecting to RabbitMQ: {}", err);
+        process::exit(-1);
+    });
+    println!("⚡️[server]: Queue connection up!");
 }
