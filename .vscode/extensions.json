@@ -2,6 +2,7 @@
   "recommendations": [
     "vadimcn.vscode-lldb",
     "earthly.earthfile-syntax-highlighting",
-    "bungcip.better-toml"
+    "bungcip.better-toml",
+    "rust-lang.rust-analyzer"
   ]
 }
