@@ -9,6 +9,13 @@ fn redis_url() -> String {
     env::var("REDIS_URL").unwrap_or("redis://localhost".to_owned())
 }
 
+fn expire_time() -> usize {
+    env::var("POLL_INTERVAL")
+        .unwrap_or("300".to_owned())
+        .parse::<usize>()
+        .unwrap_or(60 * 5)
+}
+
 fn client() -> Result<Client, RedisError> {
     Client::open(redis_url())
 }
@@ -49,13 +56,14 @@ pub async fn set<T>(
     connection: &mut Connection,
     key: &String,
     value: &T,
+    expiry: Option<usize>,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     T: Serialize + Sized,
 {
     let json = to_string(value)?;
     connection
-        .set(key, json)
+        .set_ex(key, json, expiry.unwrap_or(expire_time()))
         .await
         .map_err(|e| -> Box<dyn std::error::Error> { e.into() })
 }
