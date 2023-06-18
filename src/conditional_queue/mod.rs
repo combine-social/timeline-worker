@@ -1,8 +1,8 @@
 use serde::Serialize;
 
 use crate::{
-    cache::{has, set, Cache},
-    queue::{models::QueuedStatus, send, Connection},
+    cache::{self, Cache},
+    queue::{self, Connection, QueuedStatus},
 };
 
 pub async fn send_if_not_cached<T>(
@@ -17,9 +17,9 @@ pub async fn send_if_not_cached<T>(
 where
     T: Serialize + Sized,
 {
-    if !has(cache, key).await? {
-        set(cache, key, value, None).await?;
-        send(
+    if !cache::has(cache, key).await? {
+        cache::set(cache, key, value, None).await?;
+        queue::send(
             queue_connection,
             queue_name,
             &QueuedStatus {
