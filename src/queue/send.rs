@@ -4,7 +4,7 @@ use amqprs::{
 };
 use serde::Serialize;
 
-use super::Connection;
+use super::connect::Connection;
 
 fn queue_args(queue: &str) -> QueueDeclareArguments {
     QueueDeclareArguments::default()
@@ -22,7 +22,7 @@ async fn queue_declare(channel: &Channel, queue: &str) -> Result<(), Box<dyn std
     Ok(())
 }
 
-fn into_content<T>(message: &T) -> Result<Vec<u8>, Box<dyn std::error::Error>>
+pub fn into_content<T>(message: &T) -> Result<Vec<u8>, Box<dyn std::error::Error>>
 where
     T: Serialize + Sized,
 {

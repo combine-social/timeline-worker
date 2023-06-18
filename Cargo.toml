@@ -15,3 +15,4 @@ tokio = { version = "1.28.2", features = ["full"] }
 redis = { version = "0.23.0", features = ["tokio-comp", "aio"] }
 async-trait = "0.1.68"
 amqprs = { version = "1.4.0", features = ["urispec", "tokio-rustls"] }
+queues = "1.1.0"
