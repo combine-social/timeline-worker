@@ -6,7 +6,7 @@ use futures::Stream;
 use sqlx::types::JsonRawValue;
 use sqlx::{postgres::PgRow, FromRow, Row};
 
-pub fn find_all(con: &mut Connection) -> impl Stream<Item = Token> + '_ {
+pub fn find_by_worker_id(con: &mut Connection, worker_id: i32) -> impl Stream<Item = Token> + '_ {
     sqlx::query(
         "
                 select
@@ -15,8 +15,10 @@ pub fn find_all(con: &mut Connection) -> impl Stream<Item = Token> + '_ {
                 from registrations r 
                 join tokens t 
                     on r.id = t.registration_id
+                where t.worker_id = ?
             ",
     )
+    .bind(worker_id)
     .fetch(&mut con.connection)
     .map(|row| Token::from_row(&row.expect("PgRow unwrap error")))
     .map(|result| result.expect("Token::from_row error"))
@@ -45,6 +47,7 @@ impl FromRow<'_, PgRow> for Token {
                 created_at: row.try_get("created_at")?,
                 fail_count: row.try_get("fail_count")?,
                 registration,
+                worker_id: row.try_get("worker_id")?,
             }),
             // ColumnNotFound was the least bad error I could find to map to
             Err(error) => Err(sqlx::Error::ColumnNotFound(error.to_string())),

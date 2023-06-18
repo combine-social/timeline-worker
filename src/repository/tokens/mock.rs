@@ -8,7 +8,7 @@ use futures_util::Stream;
 use super::super::registrations::Registration;
 use super::{super::mock::Connection, Token};
 
-pub fn find_all(con: &mut Connection) -> impl Stream<Item = Token> + '_ {
+pub fn find_by_worker_id(con: &mut Connection, _worker_id: i32) -> impl Stream<Item = Token> + '_ {
     con
 }
 
@@ -39,6 +39,7 @@ impl<'a> Stream for Connection {
                     vapid_key: None,
                     nonce: String::from("nonce"),
                 },
+                worker_id: 1,
             };
             Poll::Ready(Some(dummy))
         }

@@ -8,7 +8,7 @@ async fn finds_a_token() {
     assert!(result.is_ok());
     let pool = result.unwrap();
     if let Ok(mut connection) = repository::connect(&pool).await {
-        let mut tokens = tokens::find_all(&mut connection);
+        let mut tokens = tokens::find_by_worker_id(&mut connection, 1);
         let next = tokens.next().await;
         assert!(next.is_some());
         let token = next.unwrap();

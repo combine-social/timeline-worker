@@ -10,4 +10,5 @@ pub struct Token {
     pub created_at: Option<i32>,
     pub fail_count: Option<i32>,
     pub registration: Registration,
+    pub worker_id: i32,
 }

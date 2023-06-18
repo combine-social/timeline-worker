@@ -1,7 +1,7 @@
 #[cfg(not(test))]
-pub use find::find_all;
+pub use find::find_by_worker_id;
 #[cfg(test)]
-pub use mock::find_all;
+pub use mock::find_by_worker_id;
 
 pub use models::*;
 
