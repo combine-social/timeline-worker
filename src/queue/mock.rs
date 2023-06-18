@@ -8,7 +8,7 @@ use super::next as orig_next;
 use super::send as orig_send;
 
 pub struct Connection {
-    store: RefCell<HashMap<String, RefCell<Queue<Vec<u8>>>>>,
+    pub store: RefCell<HashMap<String, RefCell<Queue<Vec<u8>>>>>,
 }
 
 pub async fn connect() -> Result<Connection, amqprs::error::Error> {

@@ -5,6 +5,9 @@ use crate::{
     queue::{self, Connection, QueuedStatus},
 };
 
+#[cfg(test)]
+mod tests;
+
 pub async fn send_if_not_cached<T>(
     cache: &mut Cache,
     queue_connection: &Connection,
