@@ -13,6 +13,11 @@ script = [
   "brew install libpq"
 ]
 
+[tasks.install_clippy]
+script = [
+  "rustup component add clippy"
+]
+
 [tasks.libpq.linux]
 script = [
   "apt-get install -y libpq"
@@ -27,7 +32,8 @@ script = [
 [tasks.dep]
 dependencies = [
   "libpq",
-  "earthly"
+  "earthly",
+  "install_clippy"
 ]
 
 [tasks.clean]
