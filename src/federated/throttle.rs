@@ -41,13 +41,15 @@ fn mutex<'a>(throttle: &'a mut Throttle, key: &String) -> &'a mut Mutex<Instant>
 /// maximum one request per second (per ip and per user).
 ///
 /// Setting this to 30 requests per minute keeps it just under the limit.
-pub async fn throttled<F>(
+pub async fn throttled<F, R>(
     throttle: &mut Throttle,
     key: &String,
     requests_per_minute: Option<i32>,
-    func: impl FnOnce() -> F,
-) where
-    F: Future,
+    func: F,
+) -> R::Output
+where
+    F: Fn() -> R,
+    R: Future,
 {
     let max_delay = 60.0 / requests_per_minute.unwrap_or(30) as f64;
     let mutex = mutex(throttle, key);
@@ -57,6 +59,7 @@ pub async fn throttled<F>(
     if delay > 0.0 {
         time::sleep(Duration::from_secs_f64(delay)).await;
     }
-    func().await;
+    let result = func().await;
     *instant = Instant::now();
+    result
 }
