@@ -1,10 +1,12 @@
+use chrono::Utc;
+
 use crate::cache::{self, StatusCacheMetaData};
 
 #[tokio::test]
 async fn stores_a_value_for_a_key() {
     let meta = StatusCacheMetaData {
         original: "orig".to_owned(),
-        created_at: "now".to_owned(),
+        created_at: Utc::now(),
         index: 0,
         level: 1,
     };

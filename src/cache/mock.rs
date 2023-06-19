@@ -38,7 +38,7 @@ pub async fn has(cache: &Cache, key: &String) -> Result<bool, Box<dyn std::error
     Ok(cache.store.contains_key(key))
 }
 
-pub async fn get<T>(cache: &Cache, key: &String) -> Result<T, Box<dyn std::error::Error>>
+pub async fn get<T>(cache: &mut Cache, key: &String) -> Result<T, Box<dyn std::error::Error>>
 where
     T: for<'a> Deserialize<'a> + Sized,
 {

@@ -9,7 +9,10 @@ pub use set::set;
 
 mod connect;
 mod get;
+mod key;
 mod set;
+
+pub use key::*;
 
 mod models;
 pub use models::*;

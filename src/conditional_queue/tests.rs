@@ -1,3 +1,5 @@
+use chrono::Utc;
+
 use crate::{
     cache::{self, StatusCacheMetaData},
     conditional_queue,
@@ -8,7 +10,7 @@ use crate::{
 async fn queues_a_status() {
     let meta = StatusCacheMetaData {
         original: "orig".to_string(),
-        created_at: "now".to_string(),
+        created_at: Utc::now(),
         index: 0,
         level: 1,
     };
@@ -32,7 +34,7 @@ async fn queues_a_status() {
 async fn skips_a_cached_status() {
     let meta = StatusCacheMetaData {
         original: "orig".to_string(),
-        created_at: "now".to_string(),
+        created_at: Utc::now(),
         index: 0,
         level: 1,
     };
