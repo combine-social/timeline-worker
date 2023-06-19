@@ -4,6 +4,7 @@ use std::process;
 mod cache;
 mod conditional_queue;
 mod context;
+mod federated;
 mod queue;
 mod repository;
 mod run_loop;
@@ -31,5 +32,6 @@ async fn main() {
         process::exit(-1);
     });
     println!("⚡️[server]: Queue connection up!");
-    perform_loop(&db, &mut cache, &mut queue).await;
+    let mut throttle = federated::throttle::initialize();
+    perform_loop(&db, &mut cache, &mut queue, &mut throttle).await;
 }
