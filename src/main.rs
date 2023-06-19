@@ -3,6 +3,7 @@ use std::process;
 
 mod cache;
 mod conditional_queue;
+mod context;
 mod queue;
 mod repository;
 mod run_loop;
