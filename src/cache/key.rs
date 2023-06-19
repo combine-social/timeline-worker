@@ -3,7 +3,7 @@ pub fn status_key(instance_url: &String, status_url: &String) -> String {
 }
 
 pub fn instance_key(instance_url: &String) -> String {
-    format!("{}", instance_url)
+    instance_url.to_string()
 }
 
 fn follow_key(username: &String) -> String {

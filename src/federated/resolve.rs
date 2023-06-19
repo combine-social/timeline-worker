@@ -25,8 +25,8 @@ fn unwrap_status_url(
 ) -> Result<Option<String>, megalodon::error::Error> {
     if let Ok(response) = result {
         let status = response.json.statuses.first();
-        if status.is_some() {
-            Ok(status.unwrap().url.clone())
+        if let Some(status) = status {
+            Ok(status.url.clone())
         } else {
             Ok(None)
         }
@@ -46,7 +46,11 @@ pub async fn resolve(
     throttle::throttled(throttle, key, None, || async {
         unwrap_status_url(
             client::authenticated_client(token)
-                .search(status_url.clone(), &SearchType::Statuses, search_options())
+                .search(
+                    status_url.to_owned(),
+                    &SearchType::Statuses,
+                    search_options(),
+                )
                 .await,
         )
     })

@@ -39,7 +39,7 @@ pub async fn fetch_next_context(
     if let Ok(Some(request)) = next_context_request(token, queue).await {
         let meta = metadata(&request, cache).await?;
         let key = cache::status_key(&request.instance_url, &request.status_url);
-        let _ = cache::set(cache, &key, &meta, None).await?;
+        _ = cache::set(cache, &key, &meta, None).await?;
         if meta.level <= 2 {
             todo!("get context, loop over descendants");
         }
