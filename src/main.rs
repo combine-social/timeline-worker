@@ -5,6 +5,7 @@ mod cache;
 mod conditional_queue;
 mod context;
 mod federated;
+mod models;
 mod queue;
 mod repository;
 mod run_loop;

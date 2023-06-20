@@ -3,7 +3,8 @@ use chrono::Utc;
 use crate::{
     cache::{self, StatusCacheMetaData},
     conditional_queue,
-    queue::{self, QueuedStatus},
+    models::ContextRequest,
+    queue::{self},
 };
 
 #[tokio::test]
@@ -22,7 +23,8 @@ async fn queues_a_status() {
         &"test".to_owned(),
         &"key".to_owned(),
         &"https://example.com".to_owned(),
-        &"https://example.com/some/message".to_owned(),
+        &"https://example.com/message/id".to_owned(),
+        &"message_id".to_owned(),
         &meta,
     )
     .await;
@@ -38,9 +40,10 @@ async fn skips_a_cached_status() {
         index: 0,
         level: 1,
     };
-    let status = QueuedStatus {
+    let status = ContextRequest {
         instance_url: "https://example.com".to_string(),
-        status_url: "https://example.com/some/message".to_string(),
+        status_id: "message_id".to_string(),
+        status_url: "https://example.com/message/id".to_string(),
     };
     let mut cache = cache::connect().await.expect("Error connecting to cache");
     let _ = cache::set(&mut cache, &"key".to_owned(), &status, None).await;
@@ -51,7 +54,8 @@ async fn skips_a_cached_status() {
         &"test".to_owned(),
         &"key".to_owned(),
         &"https://example.com".to_owned(),
-        &"https://example.com/some/message".to_owned(),
+        &"https://example.com/message/id".to_owned(),
+        &"message_id".to_owned(),
         &meta,
     )
     .await;

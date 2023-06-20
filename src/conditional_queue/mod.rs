@@ -2,7 +2,8 @@ use serde::Serialize;
 
 use crate::{
     cache::{self, Cache},
-    queue::{self, Connection, QueuedStatus},
+    models::ContextRequest,
+    queue::{self, Connection},
 };
 
 #[cfg(test)]
@@ -14,7 +15,8 @@ pub async fn send_if_not_cached<T>(
     queue_name: &String,
     key: &String,
     instance: &String,
-    url: &String,
+    status_url: &String,
+    status_id: &String,
     value: &T,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
@@ -26,9 +28,10 @@ where
         queue::send(
             queue_connection,
             queue_name,
-            &QueuedStatus {
+            &ContextRequest {
                 instance_url: instance.to_string(),
-                status_url: url.to_string(),
+                status_id: status_id.to_string(),
+                status_url: status_url.to_string(),
             },
         )
         .await?;

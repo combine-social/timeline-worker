@@ -7,11 +7,8 @@ pub use next::next;
 #[cfg(not(test))]
 pub use send::send;
 
-pub use models::*;
-
 mod connect;
 mod consumer;
-mod models;
 mod next;
 mod send;
 

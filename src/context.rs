@@ -1,10 +1,12 @@
 use chrono::Utc;
 use megalodon::entities::Status;
+use url::Url;
 
 use crate::{
     cache::{self, Cache, StatusCacheMetaData},
     conditional_queue,
-    federated::{self, throttle::Throttle, ContextRequest},
+    federated::{self, throttle::Throttle},
+    models::ContextRequest,
     queue::{self, Connection},
     repository::tokens::Token,
 };
@@ -58,11 +60,19 @@ pub async fn fetch_next_context(
     let queue_name = &token.username;
     if let Ok(Some(request)) = next_context_request(token, queue).await {
         let meta = metadata(&request, cache).await?;
-        let key = cache::status_key(&request.instance_url, &request.status_url);
+        let key = cache::status_key(&request.instance_url, &request.status_id);
         _ = cache::set(cache, &key, &meta, None).await?;
         if meta.level <= 2 {
-            if let Some(status) = federated::resolve(token, &request.status_url, throttle).await? {
-                if let Some(context) = federated::get_context(&status, throttle, None).await? {
+            _ = federated::resolve(token, &request.status_id, throttle).await?;
+            if let Some(host) = Url::parse(&request.status_url)?.host_str() {
+                if let Some(context) = federated::get_context(
+                    &host.to_string(), // [comment to force cargo fmt to break line]
+                    &request.status_id,
+                    throttle,
+                    None, // todo: use cached host sns detection
+                )
+                .await?
+                {
                     println!(
                         "Got {} descendants of {} from {} at index {}",
                         context.descendants.len(),
@@ -84,6 +94,7 @@ pub async fn fetch_next_context(
                                 &cache::status_key(&request.instance_url, &child_url),
                                 &request.instance_url,
                                 &child_url,
+                                &child.id,
                                 &next_level(&meta),
                             )
                             .await?;
