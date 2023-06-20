@@ -21,6 +21,7 @@ where
     T: Serialize + Sized,
 {
     if !cache::has(cache, key).await? {
+        println!("Queueing {}", key);
         cache::set(cache, key, value, None).await?;
         queue::send(
             queue_connection,
@@ -31,6 +32,8 @@ where
             },
         )
         .await?;
+    } else {
+        println!("Skipping {}", key);
     }
     Ok(())
 }
