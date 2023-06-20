@@ -1,4 +1,4 @@
-use megalodon::entities::Results;
+use megalodon::entities::{Results, Status};
 use megalodon::megalodon::{SearchInputOptions, SearchType};
 use megalodon::response::Response;
 
@@ -20,13 +20,13 @@ fn search_options() -> Option<&'static SearchInputOptions> {
     })
 }
 
-fn unwrap_status_url(
+fn unwrap_status(
     result: Result<Response<Results>, megalodon::error::Error>,
-) -> Result<Option<String>, megalodon::error::Error> {
+) -> Result<Option<Status>, megalodon::error::Error> {
     if let Ok(response) = result {
         let status = response.json.statuses.first();
         if let Some(status) = status {
-            Ok(status.url.clone())
+            Ok(Some(status.to_owned()))
         } else {
             Ok(None)
         }
@@ -41,10 +41,10 @@ pub async fn resolve(
     token: &Token,
     status_url: &String,
     throttle: &mut Throttle,
-) -> Result<Option<String>, megalodon::error::Error> {
+) -> Result<Option<Status>, megalodon::error::Error> {
     let key = &token.registration.instance_url;
     throttle::throttled(throttle, key, None, || async {
-        unwrap_status_url(
+        unwrap_status(
             client::authenticated_client(token)
                 .search(
                     status_url.to_owned(),

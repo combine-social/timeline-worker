@@ -37,7 +37,9 @@ fn mutex<'a>(throttle: &'a mut Throttle, key: &String) -> &'a mut Mutex<Instant>
 /// throttled to one request to a given instance 30 times
 /// per minute - just under the rate limit.
 ///
-/// Rate limits are set to 300 requests per 5 minutes, meaning
+/// Per-IP rate limit is set to 7500 reqs per 5 minutes.
+///
+/// Per user rate limits are set to 300 requests per 5 minutes, meaning
 /// maximum one request per second (per ip and per user).
 ///
 /// Setting this to 30 requests per minute keeps it just under the limit.

@@ -18,3 +18,4 @@ amqprs = { version = "1.4.0", features = ["urispec", "tokio-rustls"] }
 queues = "1.1.0"
 chrono = { version = "0.4.26", features = ["serde"] }
 megalodon = "0.8.5"
+url = "2.4.0"
