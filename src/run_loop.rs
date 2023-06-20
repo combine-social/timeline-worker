@@ -1,7 +1,6 @@
 use std::env;
 
 use futures_util::StreamExt;
-use tokio::time::{self, Duration};
 
 use crate::{
     cache::Cache,
@@ -24,7 +23,6 @@ async fn fetch_contexts_for_tokens(
     queue: &Connection,
     throttle: &mut Throttle,
 ) {
-    time::sleep(Duration::from_millis(60_000 / 30)).await;
     if let Ok(mut connection) = repository::connect(db).await {
         let mut tokens = tokens::find_by_worker_id(&mut connection, worker_id());
         while let Some(token) = tokens.next().await {

@@ -1,4 +1,5 @@
 use chrono::Utc;
+use megalodon::entities::Status;
 
 use crate::{
     cache::{self, Cache, StatusCacheMetaData},
@@ -40,6 +41,14 @@ fn next_level(meta: &StatusCacheMetaData) -> StatusCacheMetaData {
     }
 }
 
+fn status_or_reblog(status: Status) -> Status {
+    if status.reblog.is_some() {
+        *status.reblog.unwrap()
+    } else {
+        status
+    }
+}
+
 pub async fn fetch_next_context(
     token: &Token,
     cache: &mut Cache,
@@ -62,19 +71,9 @@ pub async fn fetch_next_context(
                         meta.index,
                     );
                     for descentant in context.descendants {
-                        let boxed = if descentant.reblogged.is_some_and(|r| r) {
-                            if descentant.reblog.is_none() {
-                                println!("Missing reblogged status for {}", descentant.id);
-                            }
-                            descentant.reblog
-                        } else {
-                            Some(Box::new(descentant))
-                        };
-                        if boxed.is_none() {
-                            continue;
-                        }
-                        let child = boxed.unwrap();
+                        let child = status_or_reblog(descentant);
                         if child.url.is_none() {
+                            println!("Missing url for {}", child.id);
                             continue;
                         }
                         if let Some(child_url) = child.url {
