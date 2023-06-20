@@ -5,7 +5,7 @@ use crate::repository::tokens::Token;
 pub fn authenticated_client(token: &Token) -> Box<dyn Megalodon + Send + Sync> {
     megalodon::generator(
         SNS::Mastodon, // TODO: update tokens table to include sns
-        String::from(format!("https://{}", token.registration.instance_url)),
+        format!("https://{}", token.registration.instance_url),
         Some(token.access_token.clone()),
         None,
     )
@@ -13,7 +13,7 @@ pub fn authenticated_client(token: &Token) -> Box<dyn Megalodon + Send + Sync> {
 pub fn anonymous_client(url: &str, sns: Option<SNS>) -> Box<dyn Megalodon + Send + Sync> {
     megalodon::generator(
         sns.unwrap_or(SNS::Mastodon),
-        String::from(format!("https://{}", url)),
+        format!("https://{}", url),
         None,
         None,
     )

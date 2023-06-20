@@ -61,7 +61,7 @@ pub async fn fetch_next_context(
     if let Ok(Some(request)) = next_context_request(token, queue).await {
         let meta = metadata(&request, cache).await?;
         let key = cache::status_key(&request.instance_url, &request.status_id);
-        _ = cache::set(cache, &key, &meta, None).await?;
+        cache::set(cache, &key, &meta, None).await?;
         if meta.level <= 2 {
             _ = federated::resolve(token, &request.status_id, throttle).await?;
             if let Some(host) = Url::parse(&request.status_url)?.host_str() {
@@ -87,14 +87,16 @@ pub async fn fetch_next_context(
                             continue;
                         }
                         if let Some(child_url) = child.url {
-                            _ = conditional_queue::send_if_not_cached(
+                            conditional_queue::send_if_not_cached(
                                 cache,
                                 queue,
                                 queue_name,
                                 &cache::status_key(&request.instance_url, &child_url),
-                                &request.instance_url,
-                                &child_url,
-                                &child.id,
+                                &ContextRequest {
+                                    instance_url: request.instance_url.clone(),
+                                    status_id: child.id,
+                                    status_url: child_url,
+                                },
                                 &next_level(&meta),
                             )
                             .await?;
