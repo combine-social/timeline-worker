@@ -1,4 +1,5 @@
 pub use client::*;
+pub use context::*;
 pub use models::*;
 pub use resolve::*;
 
