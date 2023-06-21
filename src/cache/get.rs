@@ -33,3 +33,14 @@ where
 {
     deserialize(&get_string(cache, key).await?)
 }
+
+pub async fn get_keys_with_prefix(
+    cache: &mut Cache,
+    prefix: &String,
+) -> Result<Vec<String>, String> {
+    cache
+        .connection
+        .keys::<String, Vec<String>>(format!("{prefix}*"))
+        .await
+        .map_err(|e| -> String { e.to_string() })
+}

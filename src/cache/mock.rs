@@ -46,3 +46,22 @@ where
         .insert(key.to_string(), orig_set::to_string(value)?);
     Ok(())
 }
+
+pub async fn get_keys_with_prefix(
+    cache: &mut Cache,
+    prefix: &String,
+) -> Result<Vec<String>, String> {
+    Ok(cache
+        .store
+        .keys()
+        .map(|s| s.to_owned())
+        .filter(|k| k.starts_with(prefix))
+        .collect())
+}
+
+pub async fn delete_keys_with_prefix(cache: &mut Cache, prefix: &String) -> Result<(), String> {
+    for key in get_keys_with_prefix(cache, prefix).await? {
+        cache.store.remove(&key);
+    }
+    Ok(())
+}
