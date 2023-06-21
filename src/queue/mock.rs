@@ -74,3 +74,21 @@ pub async fn next<T: for<'a> Deserialize<'a> + Sized + Send + Sync>(
         }
     }
 }
+
+pub async fn size(queue_name: &str) -> Result<u32, String> {
+    connect();
+    connect();
+    unsafe {
+        if let Some(mutex) = &connection.store {
+            let rc = mutex.lock().await;
+            let store = (*rc).borrow();
+            if !store.contains_key(queue_name) {
+                return Ok(0);
+            }
+            let queue = store.get(queue_name).unwrap().borrow();
+            Ok(queue.size() as u32)
+        } else {
+            Err("No store".to_string())
+        }
+    }
+}

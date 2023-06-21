@@ -1,26 +1,10 @@
-use amqprs::{
-    channel::{BasicPublishArguments, Channel, QueueDeclareArguments},
-    BasicProperties,
-};
+use amqprs::{channel::BasicPublishArguments, BasicProperties};
 use serde::Serialize;
 
-use super::connect::{self};
-
-fn queue_args(queue: &str) -> QueueDeclareArguments {
-    QueueDeclareArguments::default()
-        .queue(queue.to_owned())
-        .durable(true)
-        .auto_delete(false)
-        .finish()
-}
-
-async fn queue_declare(channel: &Channel, queue: &str) -> Result<(), String> {
-    channel
-        .queue_declare(queue_args(queue))
-        .await
-        .map_err(|e| -> String { e.to_string() })?;
-    Ok(())
-}
+use super::{
+    connect::{self},
+    declare,
+};
 
 pub fn into_content<T>(message: &T) -> Result<Vec<u8>, String>
 where
@@ -37,7 +21,7 @@ where
 {
     let result = connect::connect().await;
     if let Ok(connection) = result {
-        queue_declare(&connection.channel, queue).await?;
+        declare::queue_declare(&connection.channel, queue).await?;
         connection
             .channel
             .basic_publish(

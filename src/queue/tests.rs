@@ -22,3 +22,15 @@ async fn queues_a_status() {
         panic!();
     }
 }
+
+#[tokio::test]
+async fn measures_size() {
+    let status = ContextRequest {
+        instance_url: "http://example.com".to_owned(),
+        status_url: "http://example.com/message/id".to_owned(),
+        status_id: "id".to_owned(),
+    };
+    assert_eq!(queue::size("test").await.unwrap(), 0);
+    _ = queue::send("test", &status).await;
+    assert_eq!(queue::size("test").await.unwrap(), 1);
+}
