@@ -30,7 +30,7 @@ fn fetch_contexts_for_tokens_loop(
     db: Arc<Mutex<ConnectionPool>>,
     cache: Arc<Mutex<Cache>>,
     throttle: Arc<Mutex<Throttle>>,
-) {
+) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let db = db.lock().await;
         let mut cache = cache.lock().await;
@@ -49,13 +49,12 @@ fn fetch_contexts_for_tokens_loop(
                 tokio::time::sleep(poll_interval()).await;
             }
         }
-    });
+    })
 }
 
-pub async fn perform_loop(db: ConnectionPool, cache: Cache, throttle: Throttle) -> ! {
+pub async fn perform_loop(db: ConnectionPool, cache: Cache, throttle: Throttle) {
     let db = Arc::new(Mutex::new(db));
     let cache = Arc::new(Mutex::new(cache));
     let throttle = Arc::new(Mutex::new(throttle));
-    fetch_contexts_for_tokens_loop(db, cache, throttle);
-    loop {}
+    _ = fetch_contexts_for_tokens_loop(db, cache, throttle).await;
 }
