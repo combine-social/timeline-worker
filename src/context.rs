@@ -30,7 +30,7 @@ async fn metadata(
             level: 1,
         }))
     } else {
-        Err(result.err().unwrap().to_string())
+        Err(result.err().unwrap())
     }
 }
 
