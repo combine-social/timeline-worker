@@ -26,7 +26,7 @@ pub async fn get_context(
     status_id: &String,
     throttle: &mut Throttle,
     sns: Option<&SNS>,
-) -> Result<Option<Context>, megalodon::error::Error> {
+) -> Result<Option<Context>, String> {
     let rpm = 7500 / 5;
     throttle::throttled(throttle, instance_url, Some(rpm), || async {
         unwrap_context(
@@ -36,4 +36,5 @@ pub async fn get_context(
         )
     })
     .await
+    .map_err(|error| error.to_string())
 }

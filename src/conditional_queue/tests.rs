@@ -16,10 +16,8 @@ async fn queues_a_status() {
         level: 1,
     };
     let mut cache = cache::connect().await.expect("Error connecting to cache");
-    let connection = queue::connect().await.unwrap();
-    let result = conditional_queue::send_if_not_cached(
+    let send_result = conditional_queue::send_if_not_cached(
         &mut cache,
-        &connection,
         &"test".to_owned(),
         &"key".to_owned(),
         &ContextRequest {
@@ -30,8 +28,10 @@ async fn queues_a_status() {
         &meta,
     )
     .await;
-    assert!(result.is_ok());
-    assert_eq!(connection.store.borrow().keys().count(), 1);
+    assert!(send_result.is_ok());
+    let next_result: Result<Option<ContextRequest>, String> = queue::next(&"test".to_owned()).await;
+    assert!(next_result.is_ok());
+    assert!(next_result.ok().is_some_and(|x| x.is_some()));
 }
 
 #[tokio::test]
@@ -49,16 +49,17 @@ async fn skips_a_cached_status() {
     };
     let mut cache = cache::connect().await.expect("Error connecting to cache");
     let _ = cache::set(&mut cache, &"key".to_owned(), &request, None).await;
-    let connection = queue::connect().await.unwrap();
-    let result = conditional_queue::send_if_not_cached(
+    assert!(cache::has(&cache, &"key".to_owned()).await.ok().unwrap());
+    let send_result = conditional_queue::send_if_not_cached(
         &mut cache,
-        &connection,
         &"test".to_owned(),
         &"key".to_owned(),
         &request,
         &meta,
     )
     .await;
-    assert!(result.is_ok());
-    assert_eq!(connection.store.borrow().keys().count(), 0);
+    assert!(send_result.is_ok());
+    let next_result: Result<Option<ContextRequest>, String> = queue::next(&"test".to_owned()).await;
+    assert!(next_result.is_ok());
+    assert!(next_result.ok().is_some_and(|x| x.is_none()));
 }

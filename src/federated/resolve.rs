@@ -41,7 +41,7 @@ pub async fn resolve(
     token: &Token,
     status_url: &String,
     throttle: &mut Throttle,
-) -> Result<Option<Status>, megalodon::error::Error> {
+) -> Result<Option<Status>, String> {
     let key = &token.registration.instance_url;
     throttle::throttled(throttle, key, None, || async {
         unwrap_status(
@@ -55,4 +55,5 @@ pub async fn resolve(
         )
     })
     .await
+    .map_err(|err| err.to_string())
 }

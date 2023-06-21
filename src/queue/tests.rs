@@ -10,10 +10,9 @@ async fn queues_a_status() {
         status_url: "http://example.com/message/id".to_owned(),
         status_id: "id".to_owned(),
     };
-    let connection = queue::connect().await.unwrap();
-    let result = queue::send(&connection, "test", &status).await;
+    let result = queue::send("test", &status).await;
     assert!(result.is_ok());
-    let next = queue::next(&connection, "test").await;
+    let next = queue::next("test").await;
     assert!(next.is_ok());
     let queued: Option<ContextRequest> = next.ok().unwrap();
     assert!(queued.is_some());

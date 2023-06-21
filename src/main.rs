@@ -1,4 +1,3 @@
-use run_loop::perform_loop;
 use std::process;
 
 mod cache;
@@ -23,16 +22,11 @@ async fn main() {
         process::exit(-1);
     });
     println!("⚡️[server]: DB connection up!");
-    let mut cache = cache::connect().await.unwrap_or_else(|err| {
+    let cache = cache::connect().await.unwrap_or_else(|err| {
         println!("Error connecting to Redis: {}", err);
         process::exit(-1);
     });
     println!("⚡️[server]: Cache connection up!");
-    let mut queue = queue::connect().await.unwrap_or_else(|err| {
-        println!("Error connecting to RabbitMQ: {}", err);
-        process::exit(-1);
-    });
-    println!("⚡️[server]: Queue connection up!");
-    let mut throttle = federated::throttle::initialize();
-    perform_loop(&db, &mut cache, &mut queue, &mut throttle).await;
+    let throttle = federated::throttle::initialize();
+    run_loop::perform_loop(db, cache, throttle).await;
 }

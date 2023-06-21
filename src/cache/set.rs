@@ -11,11 +11,11 @@ fn expire_time() -> usize {
         .unwrap_or(60 * 5)
 }
 
-pub fn to_string<T>(meta: &T) -> Result<String, Box<dyn std::error::Error>>
+pub fn to_string<T>(meta: &T) -> Result<String, String>
 where
     T: Serialize + Sized,
 {
-    serde_json::to_string(meta).map_err(|e| -> Box<dyn std::error::Error> { e.into() })
+    serde_json::to_string(meta).map_err(|e| -> String { e.to_string() })
 }
 
 pub async fn set<T>(
@@ -23,7 +23,7 @@ pub async fn set<T>(
     key: &String,
     value: &T,
     expiry: Option<usize>,
-) -> Result<(), Box<dyn std::error::Error>>
+) -> Result<(), String>
 where
     T: Serialize + Sized,
 {
@@ -32,5 +32,5 @@ where
         .connection
         .set_ex(key, json, expiry.unwrap_or(expire_time()))
         .await
-        .map_err(|e| -> Box<dyn std::error::Error> { e.into() })
+        .map_err(|e| -> String { e.to_string() })
 }

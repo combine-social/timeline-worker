@@ -15,7 +15,7 @@ pub fn find_by_worker_id(con: &mut Connection, worker_id: i32) -> impl Stream<It
                 from registrations r 
                 join tokens t 
                     on r.id = t.registration_id
-                where t.worker_id = ?
+                where t.worker_id = $1
             ",
     )
     .bind(worker_id)
