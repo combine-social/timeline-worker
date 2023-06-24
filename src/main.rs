@@ -4,6 +4,7 @@ mod cache;
 mod conditional_queue;
 mod context;
 mod federated;
+mod home;
 mod models;
 mod prepare;
 mod queue;
