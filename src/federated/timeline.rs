@@ -30,7 +30,7 @@ pub async fn get_home_timeline_page(
         .map_err(|err| err.to_string())
 }
 
-fn next_link(link: &str) -> Option<String> {
+pub fn next_link(link: &str) -> Option<String> {
     if let Some(value) = link
         .split(',')
         .filter(|part| {
@@ -48,7 +48,7 @@ fn next_link(link: &str) -> Option<String> {
     }
 }
 
-fn get_parameter(url: &Url, parameter: &str) -> Option<String> {
+pub fn get_parameter(url: &Url, parameter: &str) -> Option<String> {
     url.query_pairs().find_map(|pair| {
         if pair.0.borrow() == parameter.to_owned() {
             let inner = pair.1.as_ref().to_owned();
