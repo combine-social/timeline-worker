@@ -23,7 +23,7 @@ fn unwrap_context(
 }
 pub async fn get_context(
     instance_url: &String,
-    status_id: &String,
+    status_id: &str,
     throttle: &mut Throttle,
     sns: Option<&SNS>,
 ) -> Result<Option<Context>, String> {
@@ -31,7 +31,7 @@ pub async fn get_context(
     throttle::throttled(throttle, instance_url, Some(rpm), || async {
         unwrap_context(
             client::anonymous_client(instance_url, sns.cloned())
-                .get_status_context(status_id.clone(), context_options())
+                .get_status_context(status_id.to_owned(), context_options())
                 .await,
         )
     })

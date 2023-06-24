@@ -12,6 +12,7 @@ pub struct Connection {
     pub store: Option<Mutex<RefCell<HashMap<String, RefCell<Queue<Vec<u8>>>>>>>,
 }
 
+#[allow(non_upper_case_globals)]
 static mut connection: Connection = Connection { store: None };
 
 fn connect() {

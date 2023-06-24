@@ -11,7 +11,7 @@ mod tests;
 
 pub async fn send_if_not_cached<T>(
     cache: &mut Cache,
-    queue_name: &String,
+    queue_name: &str,
     key: &String,
     request: &ContextRequest,
     value: &T,

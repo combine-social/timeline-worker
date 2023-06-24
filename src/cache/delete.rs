@@ -4,7 +4,7 @@ use super::{connect::Cache, get};
 
 pub async fn delete_keys_with_prefix(cache: &mut Cache, prefix: &String) -> Result<(), String> {
     for key in get::get_keys_with_prefix(cache, prefix).await? {
-        _ = cache
+        cache
             .connection
             .del::<String, ()>(key)
             .await
