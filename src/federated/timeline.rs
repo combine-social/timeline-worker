@@ -9,6 +9,8 @@ use url::Url;
 
 use crate::repository::tokens::Token;
 
+use super::Page;
+
 fn options(max_id: Option<String>) -> GetTimelineOptionsWithLocal {
     GetTimelineOptionsWithLocal {
         only_media: None,
@@ -23,11 +25,15 @@ fn options(max_id: Option<String>) -> GetTimelineOptionsWithLocal {
 pub async fn get_home_timeline_page(
     token: &Token,
     max_id: &Option<String>,
-) -> Result<Response<Vec<Status>>, String> {
-    super::authenticated_client(token)
+) -> Result<Page<Status>, String> {
+    super::client::authenticated_client(token)
         .get_home_timeline(Some(&options(max_id.clone())))
         .await
         .map_err(|err| err.to_string())
+        .map(|response| Page {
+            items: response.json.clone(),
+            max_id: max_id_from_response(&response),
+        })
 }
 
 pub fn next_link(link: &str) -> Option<String> {
@@ -59,7 +65,7 @@ pub fn get_parameter(url: &Url, parameter: &str) -> Option<String> {
     })
 }
 
-pub fn max_id<T>(response: &Response<T>) -> Option<String> {
+pub fn max_id_from_response<T>(response: &Response<T>) -> Option<String> {
     response.header["Link"]
         .to_str()
         .ok() // find the Link header if present

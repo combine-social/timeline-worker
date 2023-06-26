@@ -10,6 +10,7 @@ pub fn authenticated_client(token: &Token) -> Box<dyn Megalodon + Send + Sync> {
         None,
     )
 }
+
 pub fn anonymous_client(url: &str, sns: Option<SNS>) -> Box<dyn Megalodon + Send + Sync> {
     megalodon::generator(
         sns.unwrap_or(SNS::Mastodon),

@@ -1,0 +1,78 @@
+use std::{cell::RefCell, collections::HashMap};
+
+use megalodon::{
+    entities::{Context, Status},
+    SNS,
+};
+use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
+
+use crate::repository::tokens::Token;
+
+use super::{throttle::Throttle, Page};
+
+pub struct Response {
+    /// Parsed json object.
+    pub json: String,
+    /// Status code of the response.
+    pub status: u16,
+    /// Status text of the response.
+    pub status_text: String,
+    /// Headers of the response.
+    pub header: HashMap<String, String>,
+}
+
+struct Client {
+    response: Option<Mutex<RefCell<Response>>>,
+}
+
+#[allow(non_upper_case_globals)]
+static mut client: Client = Client { response: None };
+
+pub fn test_set_mock_response<T: for<'a> Deserialize<'a> + Serialize>(value: &T) {
+    unsafe {
+        if client.response.is_none() {
+            client.response = Some(Mutex::new(RefCell::new(Response {
+                json: serde_json::to_string(value).unwrap(),
+                status: 200,
+                status_text: "OK".to_owned(),
+                header: HashMap::new(),
+            })));
+        }
+    }
+}
+
+async fn get<T: for<'a> Deserialize<'a>>() -> Result<T, String> {
+    unsafe {
+        let response = &client.response;
+        let guard = &response.as_ref().unwrap().lock().await;
+        let json = &guard.borrow().json;
+        Ok(serde_json::from_str::<T>(json).map_err(|e| e.to_string())?)
+    }
+}
+
+pub async fn get_context(
+    _instance_url: &String,
+    _status_id: &str,
+    _throttle: &mut Throttle,
+    _sns: Option<&SNS>,
+) -> Result<Option<Context>, String> {
+    Ok(Some(get::<Context>().await?))
+}
+
+pub async fn resolve(
+    _token: &Token,
+    _status_url: &String,
+    _throttle: &mut Throttle,
+) -> Result<Option<Status>, String> {
+    Ok(Some(get::<Status>().await?))
+}
+
+pub async fn get_home_timeline_page(
+    _token: &Token,
+    _max_id: &Option<String>,
+) -> Result<Page<Status>, String> {
+    let items = get::<Vec<Status>>().await?;
+    let max_id = items.last().and_then(|s| Some(s.id.clone()));
+    Ok(Page { items, max_id })
+}

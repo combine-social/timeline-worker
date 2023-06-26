@@ -56,13 +56,13 @@ pub async fn queue_home_statuses(
     let mut max_id: Option<String> = None;
     let mut count = 0;
     loop {
-        let response =
+        let page =
             throttle::throttled(throttle, &token.registration.instance_url, None, || async {
                 federated::get_home_timeline_page(token, &max_id.clone()).await
             })
             .await?;
-        max_id = federated::max_id(&response);
-        for (i, s) in response.json().iter().enumerate() {
+        max_id = page.max_id.clone();
+        for (i, s) in page.items.iter().enumerate() {
             let status = status_or_reblog(s);
             if status.url.is_none() {
                 continue;

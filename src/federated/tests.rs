@@ -1,4 +1,3 @@
-use megalodon::response::Response;
 use tokio::time::Instant;
 use url::Url;
 
