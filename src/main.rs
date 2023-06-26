@@ -11,6 +11,9 @@ mod queue;
 mod repository;
 mod run_loop;
 
+#[cfg(test)]
+mod tests;
+
 fn load_env() {
     dotenvy::from_filename(".env.local").ok();
     dotenvy::from_filename_override(".env").ok();
