@@ -73,6 +73,8 @@ pub async fn get_home_timeline_page(
     _max_id: &Option<String>,
 ) -> Result<Page<Status>, String> {
     let items = get::<Vec<Status>>().await?;
-    let max_id = items.last().and_then(|s| Some(s.id.clone()));
-    Ok(Page { items, max_id })
+    Ok(Page {
+        items,
+        max_id: None,
+    })
 }

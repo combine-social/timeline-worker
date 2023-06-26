@@ -96,5 +96,8 @@ pub async fn queue_home_statuses(
                 .await;
             }
         }
+        if page.items.len() == 0 || max_id.is_none() {
+            return Ok(());
+        }
     }
 }
