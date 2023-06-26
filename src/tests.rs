@@ -23,7 +23,7 @@ async fn queues_a_home_timeline_status() {
     test_set_mock_response(&vec![Status {
         id: "status_id".to_owned(),
         uri: "https://example.com/status_id".to_owned(),
-        url: Some("https:/Some(/Some(example.com/status_i))d".to_owned()),
+        url: Some("https://example.com/status_id".to_owned()),
         account: Account {
             id: "account_id".to_owned(),
             username: "@username".to_owned(),
@@ -79,5 +79,7 @@ async fn queues_a_home_timeline_status() {
     _ = home::queue_home_statuses(&token, &mut cache, &mut throttle).await;
     let queue_result: Result<Option<ContextRequest>, String> = queue::next(queue_name).await;
     assert!(queue_result.is_ok());
-    assert!(queue_result.ok().is_some_and(|x| x.is_some()));
+    let context = queue_result.unwrap().unwrap();
+    assert_eq!(context.instance_url, "example.com".to_owned());
+    assert_eq!(context.status_id, "status_id".to_owned());
 }
