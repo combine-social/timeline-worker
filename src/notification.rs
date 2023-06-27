@@ -1,8 +1,6 @@
 use std::{env, sync::Arc};
 
-use chrono::Duration;
-use megalodon::entities::{Account, Status};
-use url::Url;
+use megalodon::entities::Account;
 
 use crate::{
     cache::Cache,

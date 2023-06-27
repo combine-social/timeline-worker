@@ -4,7 +4,7 @@
 use std::borrow::Borrow;
 
 use megalodon::{
-    entities::{Account, Notification, Status},
+    entities::{Notification, Status},
     megalodon::{
         GetAccountStatusesInputOptions, GetNotificationsInputOptions, GetTimelineOptionsWithLocal,
     },
