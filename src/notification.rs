@@ -48,7 +48,7 @@ pub async fn queue_notification_statuses(
                 }
             }
         }
-        if page.items.len() == 0 || max_id.is_none() || count >= max_timeline_count() {
+        if page.items.is_empty() || max_id.is_none() || count >= max_timeline_count() {
             break;
         }
     }
