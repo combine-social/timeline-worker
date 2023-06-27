@@ -7,7 +7,7 @@ use crate::{
     cache::Cache,
     context,
     federated::throttle::Throttle,
-    home, prepare,
+    home, notification, prepare,
     repository::{self, tokens, ConnectionPool},
 };
 
@@ -75,7 +75,12 @@ async fn queue_statuses_for_timelines(
                     let queue_name = &token.username;
                     _ = prepare::prepare_populate_queue(&mut cache, queue_name).await;
                     _ = home::queue_home_statuses(&token, &mut cache, &mut throttle).await;
-                    // todo: process notification timeline
+                    _ = notification::queue_notification_statuses(
+                        &token,
+                        &mut cache,
+                        &mut throttle,
+                    )
+                    .await;
                 }
                 println!(
                     "Waiting: {:?}s before processing timelines for tokens...",

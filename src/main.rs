@@ -6,8 +6,10 @@ mod context;
 mod federated;
 mod home;
 mod models;
+mod notification;
 mod prepare;
 mod queue;
+mod queue_statuses;
 mod repository;
 mod run_loop;
 

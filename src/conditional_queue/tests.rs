@@ -4,7 +4,7 @@ use crate::{
     cache::{self, StatusCacheMetaData},
     conditional_queue,
     models::ContextRequest,
-    queue::{self},
+    queue,
 };
 
 #[tokio::test]

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap};
 
 use megalodon::{
-    entities::{Context, Status},
+    entities::{Account, Context, Notification, Status},
     SNS,
 };
 use serde::{Deserialize, Serialize};
@@ -70,9 +70,32 @@ pub async fn resolve(
 
 pub async fn get_home_timeline_page(
     _token: &Token,
-    _max_id: &Option<String>,
+    _max_id: Option<String>,
 ) -> Result<Page<Status>, String> {
     let items = get::<Vec<Status>>().await?;
+    Ok(Page {
+        items,
+        max_id: None,
+    })
+}
+
+pub async fn get_account_timeline_page(
+    _account_id: String,
+    _account_url: String,
+    _max_id: Option<String>,
+) -> Result<Page<Status>, String> {
+    let items = get::<Vec<Status>>().await?;
+    Ok(Page {
+        items,
+        max_id: None,
+    })
+}
+
+pub async fn get_notification_timeline_page(
+    _token: &Token,
+    _max_id: Option<String>,
+) -> Result<Page<Notification>, String> {
+    let items = get::<Vec<Notification>>().await?;
     Ok(Page {
         items,
         max_id: None,
