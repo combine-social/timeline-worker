@@ -34,7 +34,7 @@ pub async fn queue_notification_statuses(
             })
             .await?;
         max_id = page.max_id.clone();
-        for (i, notif) in page.items.iter().enumerate() {
+        for notif in page.items.iter() {
             if !accounts
                 .iter()
                 .map(|a| a.id.clone())
