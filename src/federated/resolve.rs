@@ -5,7 +5,7 @@ use megalodon::response::Response;
 use crate::repository::tokens::Token;
 
 use super::client;
-use super::throttle::{self, Throttle};
+use super::throttle::{self};
 
 fn search_options() -> Option<&'static SearchInputOptions> {
     Some(&SearchInputOptions {
@@ -37,13 +37,9 @@ fn unwrap_status(
 
 /// Resolve a remote status on the instance whivch the token belongs to.
 /// Returns optional status url on success.
-pub async fn resolve(
-    token: &Token,
-    status_url: &String,
-    throttle: &mut Throttle,
-) -> Result<Option<Status>, String> {
+pub async fn resolve(token: &Token, status_url: &String) -> Result<Option<Status>, String> {
     let key = &token.registration.instance_url;
-    throttle::throttled(throttle, key, None, || async {
+    throttle::throttled(key, None, || async {
         unwrap_status(
             client::authenticated_client(token)
                 .search(

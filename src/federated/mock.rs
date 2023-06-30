@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 
 use crate::repository::tokens::Token;
 
-use super::{throttle::Throttle, Page};
+use super::Page;
 
 pub struct Response {
     /// Parsed json object.
@@ -54,17 +54,12 @@ async fn get<T: for<'a> Deserialize<'a>>() -> Result<T, String> {
 pub async fn get_context(
     _instance_url: &String,
     _status_id: &str,
-    _throttle: &mut Throttle,
     _sns: Option<&SNS>,
 ) -> Result<Option<Context>, String> {
     Ok(Some(get::<Context>().await?))
 }
 
-pub async fn resolve(
-    _token: &Token,
-    _status_url: &String,
-    _throttle: &mut Throttle,
-) -> Result<Option<Status>, String> {
+pub async fn resolve(_token: &Token, _status_url: &String) -> Result<Option<Status>, String> {
     Ok(Some(get::<Status>().await?))
 }
 

@@ -9,7 +9,7 @@ use crate::{
     cache::{self, Cache, StatusCacheMetaData},
     conditional_queue,
     federated::{
-        throttle::{self, Throttle},
+        throttle::{self},
         Page,
     },
     models::ContextRequest,
@@ -52,7 +52,6 @@ fn status_or_reblog(status: &Status) -> Status {
 pub async fn queue_statuses<F>(
     token: &Token,
     cache: &mut Cache,
-    throttle: &mut Throttle,
     pager: impl Fn(Option<String>) -> F,
 ) -> Result<(), String>
 where
@@ -61,11 +60,10 @@ where
     let mut max_id: Option<String> = None;
     let mut count = 0;
     loop {
-        let page =
-            throttle::throttled(throttle, &token.registration.instance_url, None, || async {
-                pager(max_id.clone()).await
-            })
-            .await?;
+        let page = throttle::throttled(&token.registration.instance_url, None, || async {
+            pager(max_id.clone()).await
+        })
+        .await?;
         max_id = page.max_id.clone();
         for (i, s) in page.items.iter().enumerate() {
             let status = status_or_reblog(s);

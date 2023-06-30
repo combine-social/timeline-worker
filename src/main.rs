@@ -34,6 +34,6 @@ async fn main() {
         process::exit(-1);
     });
     println!("⚡️[server]: Cache connection up!");
-    let throttle = federated::throttle::initialize();
-    run_loop::perform_loop(db, cache, throttle).await;
+    federated::throttle::initialize();
+    run_loop::perform_loop(db, cache).await;
 }

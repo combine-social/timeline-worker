@@ -5,9 +5,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     cache::Cache,
-    context,
-    federated::throttle::Throttle,
-    home, notification, prepare,
+    context, home, notification, prepare,
     repository::{self, tokens, ConnectionPool},
 };
 
@@ -39,12 +37,10 @@ fn process_interval() -> Duration {
 fn fetch_contexts_for_tokens_loop(
     db: Arc<Mutex<ConnectionPool>>,
     cache: Arc<Mutex<Cache>>,
-    throttle: Arc<Mutex<Throttle>>,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let db = db.lock().await;
         let mut cache = cache.lock().await;
-        let mut throttle = throttle.lock().await;
         if let Ok(mut connection) = repository::connect(&db).await {
             loop {
                 let mut tokens = tokens::find_by_worker_id(&mut connection, worker_id());
@@ -52,7 +48,7 @@ fn fetch_contexts_for_tokens_loop(
                 // TODO: join all handles and then sleep
                 while let Some(token) = tokens.next().await {
                     println!("Got: {:?}", token);
-                    _ = context::fetch_next_context(&token, &mut cache, &mut throttle).await;
+                    _ = context::fetch_next_context(&token, &mut cache).await;
                 }
                 tokio::time::sleep(process_interval()).await;
             }
@@ -63,12 +59,10 @@ fn fetch_contexts_for_tokens_loop(
 async fn queue_statuses_for_timelines(
     db: Arc<Mutex<ConnectionPool>>,
     cache: Arc<Mutex<Cache>>,
-    throttle: Arc<Mutex<Throttle>>,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let db = db.lock().await;
         let mut cache = cache.lock().await;
-        let mut throttle = throttle.lock().await;
         if let Ok(mut connection) = repository::connect(&db).await {
             loop {
                 let mut tokens = tokens::find_by_worker_id(&mut connection, worker_id());
@@ -76,13 +70,9 @@ async fn queue_statuses_for_timelines(
                     println!("Got: {:?}", token);
                     let queue_name = &token.username;
                     _ = prepare::prepare_populate_queue(&mut cache, queue_name).await;
-                    _ = home::queue_home_statuses(&token, &mut cache, &mut throttle).await;
-                    _ = notification::resolve_notification_account_statuses(
-                        &token,
-                        &mut cache,
-                        &mut throttle,
-                    )
-                    .await;
+                    _ = home::queue_home_statuses(&token, &mut cache).await;
+                    _ = notification::resolve_notification_account_statuses(&token, &mut cache)
+                        .await;
                 }
                 println!(
                     "Waiting: {:?}s before processing timelines for tokens...",
@@ -94,12 +84,11 @@ async fn queue_statuses_for_timelines(
     })
 }
 
-pub async fn perform_loop(db: ConnectionPool, cache: Cache, throttle: Throttle) {
+pub async fn perform_loop(db: ConnectionPool, cache: Cache) {
     let db = Arc::new(Mutex::new(db));
     let cache = Arc::new(Mutex::new(cache));
-    let throttle = Arc::new(Mutex::new(throttle));
     _ = tokio::join!(
-        fetch_contexts_for_tokens_loop(db.clone(), cache.clone(), throttle.clone()),
-        queue_statuses_for_timelines(db.clone(), cache.clone(), throttle.clone())
+        fetch_contexts_for_tokens_loop(db.clone(), cache.clone()),
+        queue_statuses_for_timelines(db.clone(), cache.clone())
     );
 }

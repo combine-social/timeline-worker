@@ -4,7 +4,7 @@ use crate::{
     cache::Cache,
     federated::{
         self,
-        throttle::{self, Throttle},
+        throttle::{self},
     },
     repository::tokens::Token,
 };
@@ -16,19 +16,15 @@ fn max_timeline_count() -> usize {
         .unwrap_or(25)
 }
 
-async fn get_notification_accounts(
-    token: &Token,
-    throttle: &mut Throttle,
-) -> Result<Vec<String>, String> {
+async fn get_notification_accounts(token: &Token) -> Result<Vec<String>, String> {
     let mut max_id: Option<String> = None;
     let mut count = 0;
     let mut accounts: Vec<String> = vec![];
     loop {
-        let page =
-            throttle::throttled(throttle, &token.registration.instance_url, None, || async {
-                federated::get_notification_timeline_page(token, max_id.clone()).await
-            })
-            .await?;
+        let page = throttle::throttled(&token.registration.instance_url, None, || async {
+            federated::get_notification_timeline_page(token, max_id.clone()).await
+        })
+        .await?;
         max_id = page.max_id.clone();
         for notif in page.items.iter() {
             if !accounts.contains(&notif.account.acct) {
@@ -49,14 +45,13 @@ async fn get_notification_accounts(
 pub async fn resolve_notification_account_statuses(
     token: &Token,
     cache: &mut Cache,
-    throttle: &mut Throttle,
 ) -> Result<(), String> {
-    let accounts = get_notification_accounts(token, throttle).await?;
+    let accounts = get_notification_accounts(token).await?;
     for acct in accounts {
         // TODO: filter out followed accounts
         let urls = federated::get_remote_account_status_urls(&acct, max_timeline_count()).await?;
         for url in urls {
-            federated::resolve(token, &url, throttle).await?;
+            federated::resolve(token, &url).await?;
             todo!();
         }
     }

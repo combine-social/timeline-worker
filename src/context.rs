@@ -5,7 +5,7 @@ use url::Url;
 use crate::{
     cache::{self, Cache, StatusCacheMetaData},
     conditional_queue,
-    federated::{self, throttle::Throttle},
+    federated::{self},
     models::ContextRequest,
     queue::{self},
     repository::tokens::Token,
@@ -64,22 +64,17 @@ fn request_host(request: &ContextRequest) -> Result<String, String> {
     }
 }
 
-pub async fn fetch_next_context(
-    token: &Token,
-    cache: &mut Cache,
-    throttle: &mut Throttle,
-) -> Result<(), String> {
+pub async fn fetch_next_context(token: &Token, cache: &mut Cache) -> Result<(), String> {
     let queue_name = &token.username;
     if let Ok(Some(request)) = next_context_request(token).await {
         let meta = metadata(&request, cache).await?;
         let key = cache::status_key(&request.instance_url, &request.status_id);
         cache::set(cache, &key, &meta, None).await?;
         if meta.level <= 2 {
-            _ = federated::resolve(token, &request.status_id, throttle).await?;
+            _ = federated::resolve(token, &request.status_id).await?;
             if let Some(context) = federated::get_context(
                 &request_host(&request)?,
                 &request.status_id,
-                throttle,
                 None, // todo: use cached host sns detection
             )
             .await?

@@ -6,7 +6,7 @@ use megalodon::entities::{
 
 use crate::{
     cache,
-    federated::{self, test_set_mock_response},
+    federated::test_set_mock_response,
     home,
     models::ContextRequest,
     queue,
@@ -18,7 +18,6 @@ async fn queues_a_home_timeline_status() {
     let db = repository::create_pool().await.unwrap();
     let mut connection = repository::connect(&db).await.unwrap();
     let mut cache = cache::connect().await.unwrap();
-    let mut throttle = federated::throttle::initialize();
     let mut tokens = tokens::find_by_worker_id(&mut connection, 1);
     let token = tokens.next().await.unwrap();
     let queue_name = &token.username;
@@ -78,7 +77,7 @@ async fn queues_a_home_timeline_status() {
         quote: false,
         bookmarked: None,
     }]);
-    _ = home::queue_home_statuses(&token, &mut cache, &mut throttle).await;
+    _ = home::queue_home_statuses(&token, &mut cache).await;
     let queue_result: Result<Option<ContextRequest>, String> = queue::next(queue_name).await;
     assert!(queue_result.is_ok());
     let context = queue_result.unwrap().unwrap();
@@ -91,7 +90,6 @@ async fn queues_a_notification_timeline_status() {
     let db = repository::create_pool().await.unwrap();
     let mut connection = repository::connect(&db).await.unwrap();
     let mut cache = cache::connect().await.unwrap();
-    let mut throttle = federated::throttle::initialize();
     let mut tokens = tokens::find_by_worker_id(&mut connection, 1);
     let token = tokens.next().await.unwrap();
     let queue_name = &token.username;
@@ -182,7 +180,7 @@ async fn queues_a_notification_timeline_status() {
         target: None,
         r#type: NotificationType::Status,
     }]);
-    _ = home::queue_home_statuses(&token, &mut cache, &mut throttle).await;
+    _ = home::queue_home_statuses(&token, &mut cache).await;
     let queue_result: Result<Option<ContextRequest>, String> = queue::next(queue_name).await;
     assert!(queue_result.is_ok());
     let context = queue_result.unwrap().unwrap();
