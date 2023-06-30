@@ -48,6 +48,8 @@ fn fetch_contexts_for_tokens_loop(
         if let Ok(mut connection) = repository::connect(&db).await {
             loop {
                 let mut tokens = tokens::find_by_worker_id(&mut connection, worker_id());
+                // TODO: rewrite to spawn a thread for each while...
+                // TODO: join all handles and then sleep
                 while let Some(token) = tokens.next().await {
                     println!("Got: {:?}", token);
                     _ = context::fetch_next_context(&token, &mut cache, &mut throttle).await;
@@ -75,7 +77,7 @@ async fn queue_statuses_for_timelines(
                     let queue_name = &token.username;
                     _ = prepare::prepare_populate_queue(&mut cache, queue_name).await;
                     _ = home::queue_home_statuses(&token, &mut cache, &mut throttle).await;
-                    _ = notification::queue_notification_statuses(
+                    _ = notification::resolve_notification_account_statuses(
                         &token,
                         &mut cache,
                         &mut throttle,

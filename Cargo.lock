@@ -2063,6 +2063,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "webfinger"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f395336b42f1be22490390830ccfe7a735725eef086cd0574bf8759408ecb3af"
+dependencies = [
+ "async-trait",
+ "reqwest",
+ "serde",
+]
+
+[[package]]
 name = "webpki"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2292,10 +2303,12 @@ dependencies = [
  "queues",
  "redis",
  "regex",
+ "reqwest",
  "serde",
  "serde_derive",
  "serde_json",
  "sqlx",
  "tokio",
  "url",
+ "webfinger",
 ]

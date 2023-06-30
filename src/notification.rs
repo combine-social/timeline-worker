@@ -1,6 +1,4 @@
-use std::{env, sync::Arc};
-
-use megalodon::entities::Account;
+use std::env;
 
 use crate::{
     cache::Cache,
@@ -8,25 +6,23 @@ use crate::{
         self,
         throttle::{self, Throttle},
     },
-    queue_statuses,
     repository::tokens::Token,
 };
 
-fn max_timeline_count() -> i32 {
+fn max_timeline_count() -> usize {
     env::var("MAX_NOTIFICATION_NEW_ACCOUNTS")
         .unwrap_or("25".to_owned())
-        .parse::<i32>()
+        .parse::<usize>()
         .unwrap_or(25)
 }
 
-pub async fn queue_notification_statuses(
+async fn get_notification_accounts(
     token: &Token,
-    cache: &mut Cache,
     throttle: &mut Throttle,
-) -> Result<(), String> {
+) -> Result<Vec<String>, String> {
     let mut max_id: Option<String> = None;
     let mut count = 0;
-    let mut accounts: Vec<Account> = vec![];
+    let mut accounts: Vec<String> = vec![];
     loop {
         let page =
             throttle::throttled(throttle, &token.registration.instance_url, None, || async {
@@ -35,14 +31,9 @@ pub async fn queue_notification_statuses(
             .await?;
         max_id = page.max_id.clone();
         for notif in page.items.iter() {
-            if !accounts
-                .iter()
-                .map(|a| a.id.clone())
-                .collect::<Vec<String>>()
-                .contains(&notif.account.id)
-            {
+            if !accounts.contains(&notif.account.acct) {
                 count += 1;
-                accounts.push(notif.account.clone());
+                accounts.push(notif.account.acct.clone());
                 if count >= max_timeline_count() {
                     break;
                 }
@@ -52,20 +43,22 @@ pub async fn queue_notification_statuses(
             break;
         }
     }
-    for account in accounts {
-        let account_url = Arc::new(account.url.clone());
-        let account_id = Arc::new(account.id.clone());
-        queue_statuses::queue_statuses(token, cache, throttle, |max_id| async {
-            let account_url = account_url.clone();
-            let account_id = account_id.clone();
-            federated::get_account_timeline_page(
-                account_id.to_string(),
-                account_url.to_string(),
-                max_id,
-            )
-            .await
-        })
-        .await?
+    Ok(accounts)
+}
+
+pub async fn resolve_notification_account_statuses(
+    token: &Token,
+    cache: &mut Cache,
+    throttle: &mut Throttle,
+) -> Result<(), String> {
+    let accounts = get_notification_accounts(token, throttle).await?;
+    for acct in accounts {
+        // TODO: filter out followed accounts
+        let urls = federated::get_remote_account_status_urls(&acct, max_timeline_count()).await?;
+        for url in urls {
+            federated::resolve(token, &url, throttle).await?;
+            todo!();
+        }
     }
     Ok(())
 }

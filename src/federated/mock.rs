@@ -101,3 +101,10 @@ pub async fn get_notification_timeline_page(
         max_id: None,
     })
 }
+
+pub async fn get_remote_account_status_urls(
+    _acct: &String,
+    _limit: usize,
+) -> Result<Vec<String>, String> {
+    Ok(vec!["https://example.com/status/1".to_owned()])
+}
