@@ -20,5 +20,9 @@
     "editor.formatOnSave": true,
     "editor.formatOnSaveMode": "file"
   },
-  "rust-analyzer.showUnlinkedFileNotification": false
+  "rust-analyzer.showUnlinkedFileNotification": false,
+  "rust-analyzer.cargo.unsetTest": [
+    "core",
+    "worker"
+  ]
 }

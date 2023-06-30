@@ -1,7 +1,7 @@
 use std::{cell::RefCell, collections::HashMap};
 
 use megalodon::{
-    entities::{Account, Context, Notification, Status},
+    entities::{Context, Notification, Status},
     SNS,
 };
 use serde::{Deserialize, Serialize};
