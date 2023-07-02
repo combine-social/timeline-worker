@@ -51,12 +51,12 @@ fn status_or_reblog(status: &Status) -> Status {
 
 pub async fn queue_statuses<F>(
     token: &Token,
-    cache: &mut Cache,
     pager: impl Fn(Option<String>) -> F,
 ) -> Result<(), String>
 where
     F: Future<Output = Result<Page<Status>, String>>,
 {
+    let mut cache = cache::connect().await?;
     let mut max_id: Option<String> = None;
     let mut count = 0;
     loop {
@@ -78,7 +78,7 @@ where
             }
             if let Some(host) = host(&status) {
                 _ = conditional_queue::send_if_not_cached(
-                    cache,
+                    &mut cache,
                     &token.username,
                     &cache::status_key(&host.clone(), &status.url.clone().unwrap()),
                     &ContextRequest {

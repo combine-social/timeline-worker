@@ -1,7 +1,7 @@
 use std::env;
 
 use crate::{
-    cache::Cache,
+    cache::{self, Cache},
     federated::{
         self,
         throttle::{self},
@@ -42,10 +42,7 @@ async fn get_notification_accounts(token: &Token) -> Result<Vec<String>, String>
     Ok(accounts)
 }
 
-pub async fn resolve_notification_account_statuses(
-    token: &Token,
-    cache: &mut Cache,
-) -> Result<(), String> {
+pub async fn resolve_notification_account_statuses(token: &Token) -> Result<(), String> {
     let accounts = get_notification_accounts(token).await?;
     for acct in accounts {
         // TODO: filter out followed accounts

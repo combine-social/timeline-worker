@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use redis::RedisError;
 use serde::{Deserialize, Serialize};
 
 use super::get as orig_get;
@@ -10,7 +9,7 @@ pub struct Cache {
     store: HashMap<String, String>,
 }
 
-pub async fn connect() -> Result<Cache, RedisError> {
+pub async fn connect() -> Result<Cache, String> {
     Ok(Cache {
         store: HashMap::new(),
     })

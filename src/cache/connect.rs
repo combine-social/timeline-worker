@@ -1,4 +1,4 @@
-use redis::{aio::Connection, Client, RedisError};
+use redis::{aio::Connection, Client};
 
 use std::env;
 
@@ -10,12 +10,15 @@ fn redis_url() -> String {
     env::var("REDIS_URL").unwrap_or("redis://localhost".to_owned())
 }
 
-fn client() -> Result<Client, RedisError> {
-    Client::open(redis_url())
+fn client() -> Result<Client, String> {
+    Client::open(redis_url()).map_err(|err| err.to_string())
 }
 
-pub async fn connect() -> Result<Cache, RedisError> {
+pub async fn connect() -> Result<Cache, String> {
     Ok(Cache {
-        connection: client()?.get_async_connection().await?,
+        connection: client()?
+            .get_async_connection()
+            .await
+            .map_err(|err| err.to_string())?,
     })
 }

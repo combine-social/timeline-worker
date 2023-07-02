@@ -64,12 +64,13 @@ fn request_host(request: &ContextRequest) -> Result<String, String> {
     }
 }
 
-pub async fn fetch_next_context(token: &Token, cache: &mut Cache) -> Result<(), String> {
+pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
+    let mut cache = cache::connect().await?;
     let queue_name = &token.username;
     if let Ok(Some(request)) = next_context_request(token).await {
-        let meta = metadata(&request, cache).await?;
+        let meta = metadata(&request, &mut cache).await?;
         let key = cache::status_key(&request.instance_url, &request.status_id);
-        cache::set(cache, &key, &meta, None).await?;
+        cache::set(&mut cache, &key, &meta, None).await?;
         if meta.level <= 2 {
             _ = federated::resolve(token, &request.status_id).await?;
             if let Some(context) = federated::get_context(
@@ -94,7 +95,7 @@ pub async fn fetch_next_context(token: &Token, cache: &mut Cache) -> Result<(), 
                     }
                     if let Some(child_url) = child.url {
                         conditional_queue::send_if_not_cached(
-                            cache,
+                            &mut cache,
                             queue_name,
                             &cache::status_key(&request.instance_url, &child_url),
                             &ContextRequest {

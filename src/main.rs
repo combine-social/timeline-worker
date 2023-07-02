@@ -29,11 +29,6 @@ async fn main() {
         process::exit(-1);
     });
     println!("⚡️[server]: DB connection up!");
-    let cache = cache::connect().await.unwrap_or_else(|err| {
-        println!("Error connecting to Redis: {}", err);
-        process::exit(-1);
-    });
-    println!("⚡️[server]: Cache connection up!");
     federated::throttle::initialize();
-    run_loop::perform_loop(db, cache).await;
+    run_loop::perform_loop(db).await;
 }
