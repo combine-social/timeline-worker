@@ -20,6 +20,13 @@ pub fn initialize() {
     }
 }
 
+fn default_rpm() -> i32 {
+    #[cfg(test)]
+    return 10000;
+    #[cfg(not(test))]
+    30
+}
+
 /// Perform a task at an instance.
 ///
 /// To ensure that rate limits are not hit, request rates are
@@ -41,7 +48,7 @@ where
         if let Some(locks) = &throttle.locks {
             let locks = locks.lock().await;
             if let Some(instant) = locks.get(key) {
-                let max_delay = 60.0 / requests_per_minute.unwrap_or(30) as f64;
+                let max_delay = 60.0 / requests_per_minute.unwrap_or(default_rpm()) as f64;
                 let duration = Instant::now().duration_since(instant.to_owned());
                 let delay = max_delay - duration.as_secs_f64();
                 if delay > 0.0 {
