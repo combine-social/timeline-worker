@@ -1,7 +1,6 @@
 use std::env;
 
 use crate::{
-    cache::{self, Cache},
     federated::{
         self,
         throttle::{self},

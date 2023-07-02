@@ -6,7 +6,7 @@ use megalodon::entities::Status;
 use url::Url;
 
 use crate::{
-    cache::{self, Cache, StatusCacheMetaData},
+    cache::{self, StatusCacheMetaData},
     conditional_queue,
     federated::{
         throttle::{self},
