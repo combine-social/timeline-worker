@@ -103,3 +103,7 @@ pub async fn get_remote_account_status_urls(
 ) -> Result<Vec<String>, String> {
     Ok(vec!["https://example.com/status/1".to_owned()])
 }
+
+pub async fn is_following(_token: &Token, _acct: &String) -> Result<bool, String> {
+    Ok(false)
+}

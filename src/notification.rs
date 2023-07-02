@@ -44,11 +44,13 @@ async fn get_notification_accounts(token: &Token) -> Result<Vec<String>, String>
 pub async fn resolve_notification_account_statuses(token: &Token) -> Result<(), String> {
     let accounts = get_notification_accounts(token).await?;
     for acct in accounts {
-        // TODO: filter out followed accounts
         let urls = federated::get_remote_account_status_urls(&acct, max_timeline_count()).await?;
         for url in urls {
-            federated::resolve(token, &url).await?;
-            todo!();
+            if let Some(status) = federated::resolve(token, &url).await? {
+                if !federated::is_following(token, &status.account.acct).await? {
+                    todo!();
+                }
+            }
         }
     }
     Ok(())
