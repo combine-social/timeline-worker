@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     context, home, notification, prepare,
-    repository::{self, tokens, ConnectionPool},
+    repository::{self, tokens, Connection, ConnectionPool},
 };
 
 fn worker_id() -> i32 {
@@ -33,18 +33,26 @@ fn process_interval() -> Duration {
     )
 }
 
+async fn connect(db: Arc<Mutex<ConnectionPool>>) -> Result<Connection, String> {
+    let db = db.lock().await;
+    repository::connect(&db)
+        .await
+        .map_err(|err| err.to_string())
+}
+
 fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
-        let db = db.lock().await;
-        if let Ok(mut connection) = repository::connect(&db).await {
+        if let Ok(mut connection) = connect(db).await {
             loop {
-                let mut tokens = tokens::find_by_worker_id(&mut connection, worker_id());
-                // TODO: rewrite to spawn a thread for each while...
-                // TODO: join all handles and then sleep
-                while let Some(token) = tokens.next().await {
-                    println!("Got: {:?}", token);
-                    _ = context::fetch_next_context(&token).await;
-                }
+                tokens::find_by_worker_id(&mut connection, worker_id())
+                    .for_each_concurrent(None, |token| async move {
+                        println!(
+                            "fetch_contexts_for_tokens_loop got token for: {:?}",
+                            token.username
+                        );
+                        _ = context::fetch_next_context(&token).await;
+                    })
+                    .await;
                 tokio::time::sleep(process_interval()).await;
             }
         }
@@ -55,17 +63,20 @@ async fn queue_statuses_for_timelines(
     db: Arc<Mutex<ConnectionPool>>,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
-        let db = db.lock().await;
-        if let Ok(mut connection) = repository::connect(&db).await {
+        if let Ok(mut connection) = connect(db).await {
             loop {
-                let mut tokens = tokens::find_by_worker_id(&mut connection, worker_id());
-                while let Some(token) = tokens.next().await {
-                    println!("Got: {:?}", token);
-                    let queue_name = &token.username;
-                    _ = prepare::prepare_populate_queue(queue_name).await;
-                    _ = home::queue_home_statuses(&token).await;
-                    _ = notification::resolve_notification_account_statuses(&token).await;
-                }
+                tokens::find_by_worker_id(&mut connection, worker_id())
+                    .for_each_concurrent(None, |token| async move {
+                        println!(
+                            "queue_statuses_for_timelines got token for: {:?}",
+                            token.username
+                        );
+                        let queue_name = &token.username;
+                        _ = prepare::prepare_populate_queue(queue_name).await;
+                        _ = home::queue_home_statuses(&token).await;
+                        _ = notification::resolve_notification_account_statuses(&token).await;
+                    })
+                    .await;
                 println!(
                     "Waiting: {:?}s before processing timelines for tokens...",
                     poll_interval().as_secs()
