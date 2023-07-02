@@ -1,0 +1,26 @@
+name: Lint and test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install dependencies
+      run: |
+        cargo install cargo-make
+        cargo make dep
+    - name: Lint and test
+      run: |
+        cargo make lint_strict
+        cargo make test
