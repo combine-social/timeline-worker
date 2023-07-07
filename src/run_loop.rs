@@ -40,51 +40,45 @@ async fn connect(db: Arc<Mutex<ConnectionPool>>) -> Result<Connection, String> {
         .map_err(|err| err.to_string())
 }
 
-fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(async move {
-        if let Ok(mut connection) = connect(db).await {
-            loop {
-                tokens::find_by_worker_id(&mut connection, worker_id())
-                    .for_each_concurrent(None, |token| async move {
-                        println!(
-                            "fetch_contexts_for_tokens_loop got token for: {:?}",
-                            token.username
-                        );
-                        _ = context::fetch_next_context(&token).await;
-                    })
-                    .await;
-                tokio::time::sleep(process_interval()).await;
-            }
+async fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) {
+    if let Ok(mut connection) = connect(db).await {
+        loop {
+            tokens::find_by_worker_id(&mut connection, worker_id())
+                .for_each_concurrent(None, |token| async move {
+                    println!(
+                        "fetch_contexts_for_tokens_loop got token for: {:?}",
+                        token.username
+                    );
+                    _ = context::fetch_next_context(&token).await;
+                })
+                .await;
+            tokio::time::sleep(process_interval()).await;
         }
-    })
+    }
 }
 
-async fn queue_statuses_for_timelines(
-    db: Arc<Mutex<ConnectionPool>>,
-) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(async move {
-        if let Ok(mut connection) = connect(db).await {
-            loop {
-                tokens::find_by_worker_id(&mut connection, worker_id())
-                    .for_each_concurrent(None, |token| async move {
-                        println!(
-                            "queue_statuses_for_timelines got token for: {:?}",
-                            token.username
-                        );
-                        let queue_name = &token.username;
-                        _ = prepare::prepare_populate_queue(queue_name).await;
-                        _ = home::queue_home_statuses(&token).await;
-                        _ = notification::resolve_notification_account_statuses(&token).await;
-                    })
-                    .await;
-                println!(
-                    "Waiting: {:?}s before processing timelines for tokens...",
-                    poll_interval().as_secs()
-                );
-                tokio::time::sleep(poll_interval()).await;
-            }
+async fn queue_statuses_for_timelines(db: Arc<Mutex<ConnectionPool>>) {
+    if let Ok(mut connection) = connect(db).await {
+        loop {
+            tokens::find_by_worker_id(&mut connection, worker_id())
+                .for_each_concurrent(None, |token| async move {
+                    println!(
+                        "queue_statuses_for_timelines got token for: {:?}",
+                        token.username
+                    );
+                    let queue_name = &token.username;
+                    _ = prepare::prepare_populate_queue(queue_name).await;
+                    _ = home::queue_home_statuses(&token).await;
+                    _ = notification::resolve_notification_account_statuses(&token).await;
+                })
+                .await;
+            println!(
+                "Waiting: {:?}s before processing timelines for tokens...",
+                poll_interval().as_secs()
+            );
+            tokio::time::sleep(poll_interval()).await;
         }
-    })
+    }
 }
 
 pub async fn perform_loop(db: ConnectionPool) {
