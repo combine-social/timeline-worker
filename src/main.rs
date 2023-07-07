@@ -29,6 +29,5 @@ async fn main() {
         process::exit(-1);
     });
     println!("⚡️[server]: DB connection up!");
-    federated::throttle::initialize();
     run_loop::perform_loop(db).await;
 }

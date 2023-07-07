@@ -5,7 +5,6 @@ use crate::federated::throttle;
 
 #[tokio::test]
 async fn delays_throttled_function() {
-    throttle::initialize();
     let key = String::from("test");
     let first = throttle::throttled(&key, Some(600), || async { Instant::now() }).await;
     let second = throttle::throttled(&key, Some(600), || async { Instant::now() }).await;

@@ -1,23 +1,16 @@
 use std::{collections::HashMap, time::Duration};
 
 use futures_util::Future;
+use once_cell::sync::Lazy;
 use tokio::{
-    sync::Mutex,
+    sync::{Mutex, MutexGuard},
     time::{self, Instant},
 };
 
-pub struct Throttle {
-    locks: Option<Mutex<HashMap<String, Instant>>>,
-}
-
-#[allow(non_upper_case_globals)]
-static mut throttle: Throttle = Throttle { locks: None };
-
-pub fn initialize() {
-    unsafe {
-        let locks = HashMap::new();
-        throttle.locks = Some(Mutex::new(locks));
-    }
+async fn global_lock() -> MutexGuard<'static, HashMap<String, Instant>> {
+    static mut INSTANCE: Lazy<Mutex<HashMap<String, Instant>>> =
+        Lazy::new(|| Mutex::new(HashMap::new()));
+    unsafe { INSTANCE.lock() }.await
 }
 
 fn default_rpm() -> i32 {
@@ -44,25 +37,25 @@ where
     F: Fn() -> R,
     R: Future,
 {
-    unsafe {
-        if let Some(locks) = &throttle.locks {
-            let locks = locks.lock().await;
-            if let Some(instant) = locks.get(key) {
-                let max_delay = 60.0 / requests_per_minute.unwrap_or(default_rpm()) as f64;
-                let duration = Instant::now().duration_since(instant.to_owned());
-                let delay = max_delay - duration.as_secs_f64();
-                if delay > 0.0 {
-                    time::sleep(Duration::from_secs_f64(delay)).await;
-                }
-            }
-        }
-    }
+    wait_if_needed(key, requests_per_minute).await;
     let result = func().await;
-    unsafe {
-        if let Some(locks) = &throttle.locks {
-            let mut locks = locks.lock().await;
-            locks.insert(key.to_owned(), Instant::now());
+    update_access_time(key).await;
+    result
+}
+
+async fn wait_if_needed(key: &String, requests_per_minute: Option<i32>) {
+    let locks = global_lock().await;
+    if let Some(instant) = locks.get(key) {
+        let max_delay = 60.0 / requests_per_minute.unwrap_or(default_rpm()) as f64;
+        let duration = Instant::now().duration_since(instant.to_owned());
+        let delay = max_delay - duration.as_secs_f64();
+        if delay > 0.0 {
+            time::sleep(Duration::from_secs_f64(delay)).await;
         }
     }
-    result
+}
+
+async fn update_access_time(key: &String) {
+    let mut locks = global_lock().await;
+    locks.insert(key.to_owned(), Instant::now());
 }
