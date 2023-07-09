@@ -20,6 +20,10 @@ pub async fn update_fail_count(
     Ok(())
 }
 
+pub async fn delete(_con: &mut Connection, _token: &Token) -> Result<(), String> {
+    Ok(())
+}
+
 impl<'a> Stream for Connection {
     type Item = Token;
 
