@@ -19,3 +19,18 @@ pub fn anonymous_client(url: &str, sns: Option<SNS>) -> Box<dyn Megalodon + Send
         None,
     )
 }
+
+pub async fn has_verified_authenticated_client(token: &Token) -> Result<(), String> {
+    let client = authenticated_client(token);
+    client
+        .verify_account_credentials()
+        .await
+        .map_err(|err| err.to_string())
+        .and_then(|response| {
+            if response.json().id.is_empty() {
+                Err("Missing client id".to_owned())
+            } else {
+                Ok(())
+            }
+        })
+}
