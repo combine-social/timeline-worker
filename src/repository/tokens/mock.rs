@@ -12,6 +12,14 @@ pub fn find_by_worker_id(con: &mut Connection, _worker_id: i32) -> impl Stream<I
     con
 }
 
+pub async fn update_fail_count(
+    _con: &mut Connection,
+    _token: &Token,
+    _count: i32,
+) -> Result<(), String> {
+    Ok(())
+}
+
 impl<'a> Stream for Connection {
     type Item = Token;
 
