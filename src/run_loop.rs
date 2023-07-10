@@ -68,7 +68,7 @@ async fn verify_token(token: &Token, db: Arc<Mutex<ConnectionPool>>) -> Result<(
             } else {
                 let fail_count = token.fail_count.unwrap_or(0) + 1;
                 if fail_count > max_fail_count() {
-                    println!(
+                    warn!(
                         "Fail-count threshold exceeded for {:?}, deleting",
                         token.username
                     );
@@ -80,7 +80,10 @@ async fn verify_token(token: &Token, db: Arc<Mutex<ConnectionPool>>) -> Result<(
             }
             result
         }
-        Err(err) => Err(err),
+        Err(err) => {
+            error!("Error connecting to db: {:?}", err);
+            Err(err)
+        }
     }
 }
 
@@ -92,7 +95,7 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) {
                     let db = db.clone();
                     async move {
                         if verify_token(&token, db).await.is_ok() {
-                            println!(
+                            info!(
                                 "fetch_contexts_for_tokens_loop got token for: {:?}",
                                 token.username
                             );
@@ -111,22 +114,32 @@ async fn queue_statuses_for_timelines(db: Arc<Mutex<ConnectionPool>>) {
         loop {
             tokens::find_by_worker_id(&mut connection, worker_id())
                 .for_each_concurrent(None, |token| {
+                    info!(
+                        "queue_statuses_for_timelines got token for: {:?}",
+                        &token.username
+                    );
                     let db = db.clone();
                     async move {
                         if verify_token(&token, db).await.is_ok() {
-                            println!(
-                                "queue_statuses_for_timelines got token for: {:?}",
-                                token.username
-                            );
                             let queue_name = &token.username;
-                            _ = prepare::prepare_populate_queue(queue_name).await;
-                            _ = home::queue_home_statuses(&token).await;
-                            _ = notification::resolve_notification_account_statuses(&token).await;
+                            if let Err(err) = prepare::prepare_populate_queue(queue_name).await {
+                                error!("Error in prepare_populate_queue: {:?}", err);
+                            }
+                            if let Err(err) = home::queue_home_statuses(&token).await {
+                                error!("Error in queue_home_statuses: {:?}", err);
+                            }
+                            if let Err(err) =
+                                notification::resolve_notification_account_statuses(&token).await
+                            {
+                                error!("Error in resolve_notification_account_statuses: {:?}", err);
+                            }
+                        } else {
+                            warn!("Could not verify token for: {:?}", &token.username);
                         }
                     }
                 })
                 .await;
-            println!(
+            info!(
                 "Waiting: {:?}s before processing timelines for tokens...",
                 poll_interval().as_secs()
             );

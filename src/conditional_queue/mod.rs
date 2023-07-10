@@ -20,11 +20,11 @@ where
     T: Serialize + Sized,
 {
     if !cache::has(cache, key).await? {
-        println!("Queueing {}", key);
+        info!("Queueing {}", key);
         cache::set(cache, key, value, None).await?;
         queue::send(queue_name, request).await?;
     } else {
-        println!("Skipping {}", key);
+        info!("Skipping {}", key);
     }
     Ok(())
 }

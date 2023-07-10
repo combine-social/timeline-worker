@@ -36,11 +36,11 @@ impl AsyncConsumer for StatusConsumer {
         _basic_properties: BasicProperties,
         content: Vec<u8>,
     ) {
-        println!("in consumer");
+        debug!("in consumer");
         if let Some(payload) = String::from_byte_vec(&content) {
-            println!("payload: {:?}", payload);
+            debug!("payload: {:?}", payload);
             if let Some(first) = payload.first() {
-                println!("first: {:?}", first);
+                debug!("first: {:?}", first);
                 self.result = Some(first.to_owned()).into();
             }
         };
@@ -50,7 +50,7 @@ impl AsyncConsumer for StatusConsumer {
             let args = BasicAckArguments::new(deliver.delivery_tag(), false);
             let result = channel.basic_ack(args).await;
             if result.is_err() {
-                println!("{:?}", result);
+                debug!("{:?}", result);
             }
         }
     }

@@ -80,7 +80,7 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
             )
             .await?
             {
-                println!(
+                info!(
                     "Got {} descendants of {} from {} at index {}",
                     context.descendants.len(),
                     request.status_url,
@@ -90,7 +90,7 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                 for descentant in context.descendants {
                     let child = status_or_reblog(descentant);
                     if child.url.is_none() {
-                        println!("Missing url for {}", child.id);
+                        warn!("Missing url for {}", child.id);
                         continue;
                     }
                     if let Some(child_url) = child.url {
@@ -110,13 +110,13 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                 }
             }
         } else {
-            println!(
+            warn!(
                 "Recursion too deep for child of {}, bailing.",
                 meta.original
             );
         }
     } else {
-        println!("Queue for {} is empty", token.username);
+        info!("Queue for {} is empty", token.username);
     }
     Ok(())
 }
