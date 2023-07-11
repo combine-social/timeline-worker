@@ -1,6 +1,9 @@
+use megalodon::response::Response;
+use reqwest::header::HeaderMap;
 use tokio::time::Instant;
 use url::Url;
 
+use super::timeline;
 use crate::federated::throttle;
 
 #[tokio::test]
@@ -29,4 +32,16 @@ fn finds_url_parameter() {
         super::timeline::get_parameter(&url, "q"),
         Some("test".to_owned())
     );
+}
+
+#[test]
+fn none_max_id_from_empty_header() {
+    let res = Response {
+        json: "test".to_owned(),
+        status: 200,
+        status_text: "OK".to_owned(),
+        header: HeaderMap::new(),
+    };
+
+    assert_eq!(timeline::max_id_from_response(&res), None);
 }

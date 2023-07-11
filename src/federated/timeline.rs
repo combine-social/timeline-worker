@@ -95,19 +95,23 @@ pub fn get_parameter(url: &Url, parameter: &str) -> Option<String> {
 }
 
 pub fn max_id_from_response<T>(response: &Response<T>) -> Option<String> {
-    response.header["Link"]
-        .to_str()
-        .ok() // find the Link header if present
-        .and_then(next_link) // split and get the rel=next part
-        .and_then(|next| {
-            // extract the url from <url>
-            let re = Regex::new(r"<(.*?)>").unwrap();
-            if let Some(caps) = re.captures(&next) {
-                Some(caps.get(1).map_or("", |m| m.as_str()).to_owned())
-            } else {
-                None
-            }
-        })
-        .and_then(|url| Url::parse(&url).ok())
-        .and_then(|url| get_parameter(&url, "max_id"))
+    if response.header.contains_key("Link") {
+        response.header["Link"]
+            .to_str()
+            .ok() // find the Link header if present
+            .and_then(next_link) // split and get the rel=next part
+            .and_then(|next| {
+                // extract the url from <url>
+                let re = Regex::new(r"<(.*?)>").unwrap();
+                if let Some(caps) = re.captures(&next) {
+                    Some(caps.get(1).map_or("", |m| m.as_str()).to_owned())
+                } else {
+                    None
+                }
+            })
+            .and_then(|url| Url::parse(&url).ok())
+            .and_then(|url| get_parameter(&url, "max_id"))
+    } else {
+        None
+    }
 }

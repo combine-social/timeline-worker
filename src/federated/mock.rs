@@ -108,6 +108,6 @@ pub async fn is_following(_token: &Token, _acct: &String) -> Result<bool, String
     Ok(false)
 }
 
-pub async fn has_verified_authenticated_client(token: &Token) -> Result<(), String> {
+pub async fn has_verified_authenticated_client(_token: &Token) -> Result<(), String> {
     Ok(())
 }
