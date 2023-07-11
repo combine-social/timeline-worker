@@ -1,5 +1,8 @@
 use std::env;
 
+use megalodon::entities::Account;
+use url::Url;
+
 use crate::{
     federated::{
         self,
@@ -15,6 +18,20 @@ fn max_timeline_count() -> usize {
         .unwrap_or(25)
 }
 
+fn acct(account: &Account) -> Result<String, String> {
+    if account.acct.contains('@') {
+        return Ok(account.acct.clone());
+    }
+    if let Some(host) = Url::parse(&account.url)
+        .and_then(|url| Ok(url.host_str().map(|s| s.to_owned())))
+        .map_err(|err| err.to_string())?
+    {
+        Ok(format!("{:?}@{:?}", account.acct, host))
+    } else {
+        Err("Missing host name".to_owned())
+    }
+}
+
 async fn get_notification_accounts(token: &Token) -> Result<Vec<String>, String> {
     let mut max_id: Option<String> = None;
     let mut count = 0;
@@ -26,9 +43,10 @@ async fn get_notification_accounts(token: &Token) -> Result<Vec<String>, String>
         .await?;
         max_id = page.max_id.clone();
         for notif in page.items.iter() {
-            if !accounts.contains(&notif.account.acct) {
+            let acct = acct(&notif.account)?;
+            if !accounts.contains(&acct) {
                 count += 1;
-                accounts.push(notif.account.acct.clone());
+                accounts.push(acct);
                 if count >= max_timeline_count() {
                     break;
                 }
