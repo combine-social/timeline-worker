@@ -45,3 +45,15 @@ fn none_max_id_from_empty_header() {
 
     assert_eq!(timeline::max_id_from_response(&res), None);
 }
+
+#[test]
+fn gets_max_id_from_response() {
+    let mut res = Response {
+        json: "test".to_owned(),
+        status: 200,
+        status_text: "OK".to_owned(),
+        header: HeaderMap::new(),
+    };
+    res.header.insert("Link", "<http://example.com/api/v1/notifications?max_id=1>; rel=\"next\", <http://example.com/api/v1/notifications?min_id=2>; rel=\"prev\"".parse().unwrap());
+    assert_eq!(timeline::max_id_from_response(&res), Some("1".to_owned()));
+}
