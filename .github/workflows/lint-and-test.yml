@@ -2,25 +2,28 @@ name: Lint and test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Install dependencies
-      run: |
-        cargo install cargo-make
-        cargo make dep
-    - name: Lint and test
-      run: |
-        cargo make lint_strict
-        cargo make test
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: davidB/rust-cargo-make@v1
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          cargo make dep
+      - name: Lint and test
+        run: |
+          cargo make lint_strict
+          cargo make test
