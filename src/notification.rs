@@ -23,7 +23,7 @@ fn acct(account: &Account) -> Result<String, String> {
         return Ok(account.acct.clone());
     }
     if let Some(host) = Url::parse(&account.url)
-        .and_then(|url| Ok(url.host_str().map(|s| s.to_owned())))
+        .map(|url| url.host_str().map(|s| s.to_owned()))
         .map_err(|err| err.to_string())?
     {
         Ok(format!("{:?}@{:?}", account.acct, host))
