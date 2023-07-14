@@ -2,6 +2,7 @@ use crate::federated::models::activitypub::{
     collection::OrderedCollection, page::OrderedCollectionPage, person::Person,
 };
 use futures_util::TryFutureExt;
+use reqwest::header::ACCEPT;
 
 use super::models::activitypub::page::{ItemObject, OrderedItem};
 
@@ -9,9 +10,13 @@ async fn get<T>(url: &String) -> Result<T, String>
 where
     T: for<'a> serde::Deserialize<'a>,
 {
-    reqwest::get(url)
-        .map_err(|err| err.to_string())
-        .await?
+    let client = reqwest::Client::new();
+    client
+        .get(url)
+        .header(ACCEPT, "application/json".to_owned())
+        .send()
+        .await
+        .map_err(|err| err.to_string())?
         .json::<T>()
         .map_err(|err| err.to_string())
         .await
