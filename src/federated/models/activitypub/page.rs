@@ -7,8 +7,6 @@ use serde_json::Value;
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderedCollectionPage {
-    #[serde(rename = "@context")]
-    pub context: Option<(String, Context)>,
     pub id: Option<String>,
     #[serde(rename = "type")]
     pub kind: Option<String>,
@@ -16,31 +14,6 @@ pub struct OrderedCollectionPage {
     pub prev: Option<String>,
     pub part_of: Option<String>,
     pub ordered_items: Option<Vec<OrderedItem>>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Context {
-    pub ostatus: Option<String>,
-    pub atom_uri: Option<String>,
-    pub in_reply_to_atom_uri: Option<String>,
-    pub conversation: Option<String>,
-    pub sensitive: Option<String>,
-    pub toot: Option<String>,
-    pub voters_count: Option<String>,
-    pub blurhash: Option<String>,
-    pub focal_point: Option<FocalPoint>,
-    #[serde(rename = "Hashtag")]
-    pub hashtag: Option<String>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct FocalPoint {
-    #[serde(rename = "@container")]
-    pub container: Option<String>,
-    #[serde(rename = "@id")]
-    pub id: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
