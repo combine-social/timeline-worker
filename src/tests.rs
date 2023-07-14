@@ -8,7 +8,7 @@ use crate::{
     federated::test_set_mock_response,
     home,
     models::ContextRequest,
-    queue,
+    notification, queue,
     repository::{self, tokens},
 };
 
@@ -26,7 +26,7 @@ async fn queues_a_home_timeline_status() {
         account: Account {
             id: "account_id".to_owned(),
             username: "@username".to_owned(),
-            acct: "https://example.com/username".to_owned(),
+            acct: "username".to_owned(),
             display_name: "John Doe".to_owned(),
             locked: false,
             discoverable: None,
@@ -94,7 +94,7 @@ async fn queues_a_notification_timeline_status() {
         account: Account {
             id: "account_id".to_owned(),
             username: "@username".to_owned(),
-            acct: "https://example.com/username".to_owned(),
+            acct: "username".to_owned(),
             display_name: "John Doe".to_owned(),
             locked: false,
             discoverable: None,
@@ -183,4 +183,35 @@ async fn queues_a_notification_timeline_status() {
     let context = queue_result.unwrap().unwrap();
     assert_eq!(context.instance_url, "example.com".to_owned());
     assert_eq!(context.status_id, "status_id".to_owned());
+}
+
+#[test]
+fn gets_user_at_hostname_acct() {
+    let account = Account {
+        id: "account_id".to_owned(),
+        username: "@username".to_owned(),
+        acct: "username".to_owned(),
+        display_name: "John Doe".to_owned(),
+        locked: false,
+        discoverable: None,
+        group: None,
+        created_at: Utc::now(),
+        followers_count: 0,
+        following_count: 0,
+        statuses_count: 1,
+        note: "".to_owned(),
+        url: "https://example.com/account_id".to_owned(),
+        avatar: "https://example.com/account/avatar.png".to_owned(),
+        avatar_static: "https://example.com/account/avatar.png".to_owned(),
+        header: "".to_owned(),
+        header_static: "".to_owned(),
+        emojis: vec![],
+        moved: None,
+        fields: vec![],
+        bot: false,
+        source: None,
+    };
+    let result = notification::acct(&account);
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), "username@example.com".to_owned());
 }

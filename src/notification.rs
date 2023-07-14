@@ -18,7 +18,7 @@ fn max_timeline_count() -> usize {
         .unwrap_or(25)
 }
 
-fn acct(account: &Account) -> Result<String, String> {
+pub fn acct(account: &Account) -> Result<String, String> {
     if account.acct.contains('@') {
         return Ok(account.acct.clone());
     }
@@ -26,7 +26,7 @@ fn acct(account: &Account) -> Result<String, String> {
         .map(|url| url.host_str().map(|s| s.to_owned()))
         .map_err(|err| err.to_string())?
     {
-        Ok(format!("{:?}@{:?}", account.acct, host))
+        Ok(format!("{}@{}", account.acct, host))
     } else {
         Err("Missing host name".to_owned())
     }
