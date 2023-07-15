@@ -4,7 +4,7 @@ use serde::Deserialize;
 use super::connect::Cache;
 
 pub async fn has(cache: &mut Cache, key: &String) -> Result<bool, String> {
-    let result: Result<u32, redis::RedisError> = cache.connection.exists(key).await;
+    let result: Result<i32, redis::RedisError> = cache.connection.exists(key).await;
     if let Ok(exists) = result {
         Ok(exists != 0)
     } else {
