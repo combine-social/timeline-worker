@@ -24,7 +24,7 @@ pub async fn is_following(token: &Token, acct: &String) -> Result<bool, String> 
         })
         .await?
         .iter()
-        .map(|account| account.username.clone())
+        .map(|followed| followed.username.clone())
         .collect();
         cache::set(&mut cache, key, &following, None).await?;
     }
