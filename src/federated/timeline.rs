@@ -11,7 +11,7 @@ use megalodon::{
 use regex::Regex;
 use url::Url;
 
-use crate::repository::tokens::Token;
+use crate::{repository::tokens::Token, strerr::here};
 
 use super::Page;
 
@@ -41,10 +41,11 @@ pub async fn get_home_timeline_page(
     token: &Token,
     max_id: Option<String>,
 ) -> Result<Page<Status>, String> {
+    info!("in get_home_timeline_page");
     super::client::authenticated_client(token)
         .get_home_timeline(Some(&home_options(max_id.clone())))
         .await
-        .map_err(|err| err.to_string())
+        .map_err(|err| here!(err))
         .map(|response| Page {
             items: response.json.clone(),
             max_id: max_id_from_response(&response),
@@ -58,7 +59,15 @@ pub async fn get_notification_timeline_page(
     super::client::authenticated_client(token)
         .get_notifications(Some(&notification_option(max_id.clone())))
         .await
-        .map_err(|err| err.to_string())
+        .map_err(|err| {
+            error!(
+                "Error getting notifications for {} (max_id: {}): {:?}",
+                &token.username,
+                &max_id.unwrap_or("None".to_owned()),
+                err
+            );
+            here!(err)
+        })
         .map(|response| Page {
             items: response.json(),
             max_id: max_id_from_response(&response),

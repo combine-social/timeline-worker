@@ -1,6 +1,6 @@
 use megalodon::{Megalodon, SNS};
 
-use crate::repository::tokens::Token;
+use crate::{repository::tokens::Token, strerr::here};
 
 pub fn authenticated_client(token: &Token) -> Box<dyn Megalodon + Send + Sync> {
     megalodon::generator(
@@ -25,7 +25,7 @@ pub async fn has_verified_authenticated_client(token: &Token) -> Result<(), Stri
     client
         .verify_account_credentials()
         .await
-        .map_err(|err| err.to_string())
+        .map_err(|err| here!(err))
         .and_then(|response| {
             if response.json().id.is_empty() {
                 Err("Missing client id".to_owned())

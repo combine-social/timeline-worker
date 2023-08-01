@@ -1,3 +1,5 @@
+use crate::strerr::here;
+
 use super::super::connect::Connection;
 use super::Token;
 
@@ -17,6 +19,6 @@ pub async fn update_fail_count(
     .bind(token.id)
     .execute(&mut con.connection)
     .await
-    .map_err(|err| err.to_string())?;
+    .map_err(|err| here!(err))?;
     Ok(())
 }

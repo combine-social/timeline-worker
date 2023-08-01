@@ -1,5 +1,8 @@
-use crate::federated::models::activitypub::{
-    collection::OrderedCollection, page::OrderedCollectionPage, person::Person,
+use crate::{
+    federated::models::activitypub::{
+        collection::OrderedCollection, page::OrderedCollectionPage, person::Person,
+    },
+    strerr::here,
 };
 use futures_util::TryFutureExt;
 use reqwest::header::ACCEPT;
@@ -16,9 +19,9 @@ where
         .header(ACCEPT, "application/json".to_owned())
         .send()
         .await
-        .map_err(|err| err.to_string())?
+        .map_err(|err| here!(err))?
         .json::<T>()
-        .map_err(|err| err.to_string())
+        .map_err(|err| here!(err))
         .await
 }
 
@@ -36,7 +39,10 @@ pub async fn get_remote_account_status_urls(
 ) -> Result<Vec<String>, String> {
     if let Some(person_url) = webfinger::resolve(acct, true)
         .await
-        .map_err(|err| format!("{:?}", err))?
+        .map_err(|err| {
+            error!("Error resolving {}: {:?}", &acct, &err);
+            format!("{:?}", err)
+        })?
         .links
         .iter()
         .filter(|link| link.rel == *"self")
@@ -50,7 +56,10 @@ pub async fn get_remote_account_status_urls(
             let mut page_url = Some(outbox.first);
             let mut urls: Vec<String> = vec![];
             while let Some(url) = page_url {
-                let page = get::<OrderedCollectionPage>(&url).await?;
+                let page = get::<OrderedCollectionPage>(&url).await.map_err(|err| {
+                    error!("Error getting page for {}: {:?}", &url, &err);
+                    err
+                })?;
                 if let Some(items) = page.ordered_items {
                     urls = [
                         urls,

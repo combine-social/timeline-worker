@@ -10,6 +10,7 @@ use crate::{
         tokens::{self, Token},
         Connection, ConnectionPool,
     },
+    strerr::here,
 };
 
 fn worker_id() -> i32 {
@@ -48,10 +49,10 @@ fn max_fail_count() -> i32 {
 }
 
 async fn connect(db: Arc<Mutex<ConnectionPool>>) -> Result<Connection, String> {
+    info!("Locking db mutex...");
     let db = db.lock().await;
-    repository::connect(&db)
-        .await
-        .map_err(|err| err.to_string())
+    info!("Connecting to db...");
+    repository::connect(&db).await.map_err(|err| here!(err))
 }
 
 /// Verify token

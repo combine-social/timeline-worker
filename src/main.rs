@@ -15,6 +15,7 @@ mod queue;
 mod queue_statuses;
 mod repository;
 mod run_loop;
+mod strerr;
 
 #[macro_use]
 extern crate log;

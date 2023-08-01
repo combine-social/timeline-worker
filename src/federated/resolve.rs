@@ -3,6 +3,7 @@ use megalodon::megalodon::{SearchInputOptions, SearchType};
 use megalodon::response::Response;
 
 use crate::repository::tokens::Token;
+use crate::strerr::here;
 
 use super::client;
 use super::throttle::{self};
@@ -51,5 +52,5 @@ pub async fn resolve(token: &Token, status_url: &String) -> Result<Option<Status
         )
     })
     .await
-    .map_err(|err| err.to_string())
+    .map_err(|err| here!(err))
 }

@@ -2,6 +2,8 @@ use redis::{aio::Connection, Client};
 
 use std::env;
 
+use crate::strerr::here;
+
 pub struct Cache {
     pub connection: Connection,
 }
@@ -11,7 +13,7 @@ fn redis_url() -> String {
 }
 
 fn client() -> Result<Client, String> {
-    Client::open(redis_url()).map_err(|err| err.to_string())
+    Client::open(redis_url()).map_err(|err| here!(err))
 }
 
 pub async fn connect() -> Result<Cache, String> {
@@ -19,6 +21,6 @@ pub async fn connect() -> Result<Cache, String> {
         connection: client()?
             .get_async_connection()
             .await
-            .map_err(|err| err.to_string())?,
+            .map_err(|err| here!(err))?,
     })
 }
