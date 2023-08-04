@@ -27,9 +27,9 @@ pub async fn next<T: for<'a> Deserialize<'a> + Sized + Send + Sync>(
                 err
             })?;
         if let Some(content) = consumer::consume(connection, queue).await? {
-            into(&content).or_else(|err| {
+            into(&content).map_err(|err| {
                 error!("into {:?} failed: {:?}", type_name::<T>(), &err);
-                Err(here!(err))
+                here!(err)
             })
         } else {
             Ok(None)

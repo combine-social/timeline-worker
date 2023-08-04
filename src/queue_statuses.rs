@@ -70,7 +70,7 @@ where
         })?;
         max_id = page.max_id.clone();
         for (i, s) in page.items.iter().enumerate() {
-            let created_at = s.created_at.clone();
+            let created_at = s.created_at;
             let status = status_or_reblog(s);
             if status.url.is_none() {
                 warn!("No url for status: {:?}", &status.id);

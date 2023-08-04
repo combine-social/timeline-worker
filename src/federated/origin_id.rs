@@ -12,7 +12,7 @@ impl OriginId for Status {
             .clone()
             .split('/')
             .last()
-            .and_then(|s| Some(Ok(s.to_owned())))
+            .map(|s| Ok(s.to_owned()))
             .unwrap_or_else(|| {
                 let msg = format!("Bad uri format for {}: {}", &self.id, &self.uri);
                 Err(here!(msg))

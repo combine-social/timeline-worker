@@ -78,14 +78,14 @@ fn request_host(request: &ContextRequest) -> Result<String, String> {
 pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
     let mut cache = cache::connect().await?;
     let queue_name = &token.username;
-    let result = next_context_request(&token).await;
+    let result = next_context_request(token).await;
     info!("next_context_request result: {:?}", &result);
     if let Ok(Some(request)) = result {
         let meta = metadata(&request, &mut cache).await?;
         let key = cache::status_key(&request.instance_url, &request.status_id);
         cache::set(&mut cache, &key, &meta, None).await?;
         if meta.level <= 2 {
-            federated::resolve(&token, &request.status_url).await;
+            federated::resolve(token, &request.status_url).await;
             if let Some(context) = federated::get_context(
                 &request_host(&request)?,
                 &request.status_id,
