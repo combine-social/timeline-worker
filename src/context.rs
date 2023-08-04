@@ -72,7 +72,7 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
         let key = cache::status_key(&request.instance_url, &request.status_id);
         cache::set(&mut cache, &key, &meta, None).await?;
         if meta.level <= 2 {
-            _ = federated::resolve(token, &request.status_id).await?;
+            federated::resolve(&token, &request.status_url).await;
             if let Some(context) = federated::get_context(
                 &request_host(&request)?,
                 &request.status_id,

@@ -77,7 +77,7 @@ pub async fn resolve_notification_account_statuses(token: &Token) -> Result<(), 
             let urls =
                 federated::get_remote_account_status_urls(&acct, max_timeline_count()).await?;
             for url in urls {
-                federated::resolve(token, &url).await?;
+                federated::resolve(token, &url).await;
             }
         }
     }

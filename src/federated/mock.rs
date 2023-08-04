@@ -59,8 +59,8 @@ pub async fn get_context(
     Ok(Some(get::<Context>().await?))
 }
 
-pub async fn resolve(_token: &Token, _status_url: &String) -> Result<Option<Status>, String> {
-    Ok(Some(get::<Status>().await?))
+pub async fn resolve(_token: &Token, _status_url: &String) {
+    // nop
 }
 
 pub async fn get_home_timeline_page(

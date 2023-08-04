@@ -1,9 +1,6 @@
-use megalodon::entities::{Results, Status};
 use megalodon::megalodon::{SearchInputOptions, SearchType};
-use megalodon::response::Response;
 
 use crate::repository::tokens::Token;
-use crate::strerr::here;
 
 use super::client;
 use super::throttle::{self};
@@ -21,36 +18,26 @@ fn search_options() -> Option<&'static SearchInputOptions> {
     })
 }
 
-fn unwrap_status(
-    result: Result<Response<Results>, megalodon::error::Error>,
-) -> Result<Option<Status>, megalodon::error::Error> {
-    if let Ok(response) = result {
-        let status = response.json.statuses.first();
-        if let Some(status) = status {
-            Ok(Some(status.to_owned()))
-        } else {
-            Ok(None)
-        }
-    } else {
-        Err(result.err().unwrap())
-    }
+/// Resolve a remote status on the instance which the token belongs to.
+/// This runs non-blocking on a separate green thread.
+pub async fn resolve(token: &Token, status_url: &String) {
+    let token = token.to_owned();
+    let status_url = status_url.to_owned();
+    tokio::spawn(async {
+        perform_resolve(token, status_url).await;
+    });
 }
 
-/// Resolve a remote status on the instance whivch the token belongs to.
-/// Returns optional status url on success.
-pub async fn resolve(token: &Token, status_url: &String) -> Result<Option<Status>, String> {
+async fn perform_resolve(token: Token, status_url: String) {
     let key = &token.registration.instance_url;
     throttle::throttled(key, None, || async {
-        unwrap_status(
-            client::authenticated_client(token)
-                .search(
-                    status_url.to_owned(),
-                    &SearchType::Statuses,
-                    search_options(),
-                )
-                .await,
-        )
+        _ = client::authenticated_client(&token)
+            .search(
+                status_url.to_owned(),
+                &SearchType::Statuses,
+                search_options(),
+            )
+            .await;
     })
-    .await
-    .map_err(|err| here!(err))
+    .await;
 }
