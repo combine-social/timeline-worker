@@ -5,7 +5,7 @@ use url::Url;
 use crate::{
     cache::{self, Cache, StatusCacheMetaData},
     conditional_queue,
-    federated::{self},
+    federated::{self, OriginId},
     models::ContextRequest,
     queue::{self},
     repository::tokens::Token,
@@ -101,14 +101,14 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                         warn!("Missing url for {}", child.id);
                         continue;
                     }
-                    if let Some(child_url) = child.url {
+                    if let Some(child_url) = child.url.clone() {
                         conditional_queue::send_if_not_cached(
                             &mut cache,
                             queue_name,
                             &cache::status_key(&request.instance_url, &child_url),
                             &ContextRequest {
                                 instance_url: request.instance_url.clone(),
-                                status_id: child.id,
+                                status_id: child.origin_id()?,
                                 status_url: child_url,
                             },
                             &next_level(&meta),

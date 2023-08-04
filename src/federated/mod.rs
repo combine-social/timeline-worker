@@ -14,6 +14,7 @@ pub use resolve::*;
 pub use timeline::{get_home_timeline_page, get_notification_timeline_page};
 
 pub use models::Page;
+pub use origin_id::OriginId;
 
 #[cfg(test)]
 pub use mock::*;
@@ -22,6 +23,7 @@ mod client;
 mod context;
 mod follow;
 mod models;
+mod origin_id;
 mod outbox;
 mod resolve;
 pub mod throttle;

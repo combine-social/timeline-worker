@@ -10,7 +10,7 @@ use crate::{
     conditional_queue,
     federated::{
         throttle::{self},
-        Page,
+        OriginId, Page,
     },
     models::ContextRequest,
     repository::tokens::Token,
@@ -93,7 +93,7 @@ where
                     &cache::status_key(&host.clone(), &status.url.clone().unwrap()),
                     &ContextRequest {
                         instance_url: host.clone(),
-                        status_id: status.id.clone(),
+                        status_id: status.origin_id()?,
                         status_url: status.url.clone().unwrap(),
                     },
                     &StatusCacheMetaData {
