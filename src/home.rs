@@ -11,7 +11,12 @@ pub async fn queue_home_statuses(token: &Token) -> Result<(), String> {
         let page = federated::get_home_timeline_page(token, max_id).await?;
         info!("page has {:?} statuses", page.items.len());
         for status in page.items.iter() {
-            resolve_mentioned_account_statuses(token, status).await?;
+            resolve_mentioned_account_statuses(token, status)
+                .await
+                .map_err(|err| {
+                    error!("resolve_mentioned_account_statuses error: {:?}", err);
+                    err
+                })?;
         }
         Ok(page)
     })

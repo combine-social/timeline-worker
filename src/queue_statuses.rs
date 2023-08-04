@@ -63,17 +63,26 @@ where
         let page = throttle::throttled(&token.registration.instance_url, None, || async {
             pager(max_id.clone()).await
         })
-        .await?;
+        .await
+        .map_err(|err| {
+            error!("pager error: {:?}", err);
+            err
+        })?;
         max_id = page.max_id.clone();
         for (i, s) in page.items.iter().enumerate() {
             let status = status_or_reblog(s);
             if status.url.is_none() {
+                warn!("No url for status: {:?}", &status.id);
                 continue;
             }
             let now = Utc::now();
             let age = now.signed_duration_since(status.created_at);
             count += 1;
             if age > since() || count >= max_timeline_count() {
+                info!(
+                    "returning because age is {:?} or count is {:?}",
+                    &age, &count
+                );
                 return Ok(());
             }
             if let Some(host) = host(&status) {
@@ -94,9 +103,12 @@ where
                     },
                 )
                 .await;
+            } else {
+                warn!("no host for {:?}", &status);
             }
         }
         if page.items.is_empty() || max_id.is_none() {
+            info!("page size: {:?}, max_id: {:?}", page.items.len(), &max_id);
             return Ok(());
         }
     }

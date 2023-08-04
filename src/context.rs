@@ -108,6 +108,8 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                         .await?;
                     }
                 }
+            } else {
+                error!("get_contect for {:?} failed", request);
             }
         } else {
             warn!(

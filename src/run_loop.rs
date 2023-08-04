@@ -105,6 +105,10 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) {
                     }
                 })
                 .await;
+            info!(
+                "Waiting: {:?}s before fetching contexts for tokens...",
+                process_interval().as_secs()
+            );
             tokio::time::sleep(process_interval()).await;
         }
     }
