@@ -1,6 +1,7 @@
 use crate::repository::registrations::Registration;
+use std::clone::Clone;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Token {
     pub id: i32,
     pub username: String,

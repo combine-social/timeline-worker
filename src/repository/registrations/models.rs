@@ -1,6 +1,7 @@
 use serde::Deserialize;
+use std::clone::Clone;
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct Registration {
     pub id: i32,
     pub instance_url: String,
