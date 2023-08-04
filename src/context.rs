@@ -21,6 +21,14 @@ async fn metadata(
     cache: &mut Cache,
 ) -> Result<StatusCacheMetaData, String> {
     let key = cache::status_key(&request.instance_url, &request.status_url);
+    if !cache::has(cache, &key).await? {
+        return Ok(StatusCacheMetaData {
+            original: request.status_url.clone(),
+            created_at: Utc::now(),
+            index: 0,
+            level: 1,
+        });
+    }
     let result = cache::get::<Option<StatusCacheMetaData>>(cache, &key).await;
     if let Ok(value) = result {
         Ok(value.unwrap_or(StatusCacheMetaData {
