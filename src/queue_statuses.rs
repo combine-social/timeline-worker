@@ -70,13 +70,14 @@ where
         })?;
         max_id = page.max_id.clone();
         for (i, s) in page.items.iter().enumerate() {
+            let created_at = s.created_at.clone();
             let status = status_or_reblog(s);
             if status.url.is_none() {
                 warn!("No url for status: {:?}", &status.id);
                 continue;
             }
             let now = Utc::now();
-            let age = now.signed_duration_since(status.created_at);
+            let age = now.signed_duration_since(created_at);
             count += 1;
             if age > since() || count >= max_timeline_count() {
                 info!(
