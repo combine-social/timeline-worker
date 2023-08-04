@@ -1,57 +1,48 @@
-use std::sync::Arc;
-
-use amqprs::{
-    channel::{BasicAckArguments, Channel},
-    consumer::AsyncConsumer,
-    BasicProperties, Deliver,
-};
-use async_trait::async_trait;
+use amqprs::channel::{BasicAckArguments, BasicGetArguments};
 use redis::FromRedisValue;
 
-pub struct StatusConsumer {
-    no_ack: bool,
-    result: Arc<Option<String>>,
-}
+use crate::strerr::here;
 
-impl StatusConsumer {
-    /// Return a new consumer.
-    ///
-    /// See [Acknowledgement Modes](https://www.rabbitmq.com/consumers.html#acknowledgement-modes)
-    ///
-    /// no_ack = [`true`] means automatic ack and should NOT send ACK to server.
-    ///
-    /// no_ack = [`false`] means manual ack, and should send ACK message to server.
+use super::connect::Connection;
 
-    pub fn new(no_ack: bool, result: Arc<Option<String>>) -> Self {
-        Self { no_ack, result }
-    }
-}
-
-#[async_trait]
-impl AsyncConsumer for StatusConsumer {
-    async fn consume(
-        &mut self,
-        channel: &Channel,
-        deliver: Deliver,
-        _basic_properties: BasicProperties,
-        content: Vec<u8>,
-    ) {
-        debug!("in consumer");
+pub async fn consume(connection: Connection, queue: &str) -> Result<Option<String>, String> {
+    if let Some(response) = connection
+        .channel
+        .basic_get(BasicGetArguments {
+            queue: queue.to_string(),
+            no_ack: false,
+        })
+        .await
+        .map_err(|err| -> String {
+            error!("Error consuming from {:?}: {:?}", queue, &err);
+            here!(err)
+        })?
+    {
+        connection
+            .channel
+            .basic_ack(BasicAckArguments {
+                delivery_tag: response.0.delivery_tag(),
+                multiple: false,
+            })
+            .await
+            .map_err(|err| here!(err))?;
+        let content = response.2;
         if let Some(payload) = String::from_byte_vec(&content) {
             debug!("payload: {:?}", payload);
             if let Some(first) = payload.first() {
                 debug!("first: {:?}", first);
-                self.result = Some(first.to_owned()).into();
+                Ok(Some(first.to_owned()))
+            } else {
+                let msg = format!("No first in payload for {:?}", &content);
+                error!("{:?}", msg);
+                Err(here!(msg))
             }
-        };
-
-        // ack explicitly if manual ack
-        if !self.no_ack {
-            let args = BasicAckArguments::new(deliver.delivery_tag(), false);
-            let result = channel.basic_ack(args).await;
-            if result.is_err() {
-                debug!("{:?}", result);
-            }
+        } else {
+            let msg = format!("Empty payload from {:?}", response.0);
+            error!("{:?}", msg);
+            Err(here!(msg))
         }
+    } else {
+        Ok(None)
     }
 }
