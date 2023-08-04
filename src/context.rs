@@ -9,6 +9,7 @@ use crate::{
     models::ContextRequest,
     queue::{self},
     repository::tokens::Token,
+    strerr::here,
 };
 
 async fn next_context_request(token: &Token) -> Result<Option<ContextRequest>, String> {
@@ -38,7 +39,9 @@ async fn metadata(
             level: 1,
         }))
     } else {
-        Err(result.err().unwrap())
+        let msg = result.err().unwrap();
+        error!("Error getting metadata for {:?}: {:?}", request, msg);
+        Err(here!(msg))
     }
 }
 
@@ -75,7 +78,9 @@ fn request_host(request: &ContextRequest) -> Result<String, String> {
 pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
     let mut cache = cache::connect().await?;
     let queue_name = &token.username;
-    if let Ok(Some(request)) = next_context_request(token).await {
+    let result = next_context_request(&token).await;
+    info!("next_context_request result: {:?}", &result);
+    if let Ok(Some(request)) = result {
         let meta = metadata(&request, &mut cache).await?;
         let key = cache::status_key(&request.instance_url, &request.status_id);
         cache::set(&mut cache, &key, &meta, None).await?;
