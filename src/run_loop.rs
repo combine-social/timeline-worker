@@ -101,6 +101,8 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) {
                                 token.username
                             );
                             _ = context::fetch_next_context(&token).await;
+                        } else {
+                            warn!("Could not verify token for {}", &token.username);
                         }
                     }
                 })

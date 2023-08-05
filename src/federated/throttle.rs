@@ -50,12 +50,18 @@ async fn wait_if_needed(key: &String, requests_per_minute: Option<i32>) {
         let duration = Instant::now().duration_since(instant.to_owned());
         let delay = max_delay - duration.as_secs_f64();
         if delay > 0.0 {
+            info!("waiting {:.1}s on {}", delay, key);
             time::sleep(Duration::from_secs_f64(delay)).await;
+        } else {
+            info!("no wait needed for {}", key);
         }
+    } else {
+        info!("no lock found for for {}", key);
     }
 }
 
 async fn update_access_time(key: &String) {
     let mut locks = global_lock().await;
+    info!("setting access time to now for {}", key);
     locks.insert(key.to_owned(), Instant::now());
 }
