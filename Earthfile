@@ -3,8 +3,10 @@ VERSION 0.7
 build:
   FROM rust:1.70
   WORKDIR /app
-  COPY . .
   RUN cargo install cargo-make
+  COPY . .
+  RUN cargo make libpq
+  RUN cargo make install-clippy
 	RUN cargo make all
   SAVE ARTIFACT target/release/worker /worker/bin
 

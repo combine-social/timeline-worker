@@ -3,33 +3,22 @@ IMAGE = "ghcr.io/combine-social/timeline-worker"
 TAG = "latest"
 
 [tasks.earthly]
-script = [
-  "brew install earthly",
-  "earthly bootstrap"
-]
+script = ["brew install earthly", "earthly bootstrap"]
 
 [tasks.libpq]
-script = [
-  "brew install libpq"
-]
+script = ["brew install libpq"]
 
 [tasks.libpq.linux]
-script = [
-  "sudo apt-get install -y libpq-dev libpq5"
-]
+script = ["apt-get install -y libpq-dev libpq5"]
 
 [tasks.earthly.linux]
 script = [
-  "sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'",
-  "earthly bootstrap --with-autocomplete"
+  "/bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'",
+  "earthly bootstrap",
 ]
 
 [tasks.dep]
-dependencies = [
-  "libpq",
-  "earthly",
-  "install-clippy"
-]
+dependencies = ["libpq", "earthly", "install-clippy"]
 
 [tasks.clean]
 command = "cargo"
@@ -50,21 +39,11 @@ args = ["clippy"]
 
 [tasks.lint_strict]
 command = "cargo"
-args = [
-  "clippy",
-  "--",
-  "-D",
-  "warnings"
-]
+args = ["clippy", "--", "-D", "warnings"]
 
 [tasks.test]
 command = "cargo"
-args = [
-  "test",
-  "--",
-  "--test-threads",
-  "1"
-]
+args = ["test", "--", "--test-threads", "1"]
 
 [tasks.strip]
 install_crate = "cargo-strip"
@@ -72,20 +51,11 @@ command = "cargo"
 args = ["strip"]
 
 [tasks.all]
-dependencies = [
-  "lint_strict",
-  "test",
-  "release",
-  "strip"
-]
+dependencies = ["lint_strict", "test", "release", "strip"]
 
 [tasks.image]
-script = [
-  "earthly +all --image=${IMAGE} --tag=${TAG}"
-]
+script = ["earthly +all --image=${IMAGE} --tag=${TAG}"]
 
 [tasks.push]
-dependencies = [ "image" ]
-script = [
-  "earthly --push +all --image=${IMAGE} --tag=${TAG}"
-]
+dependencies = ["image"]
+script = ["earthly --push +all --image=${IMAGE} --tag=${TAG}"]
