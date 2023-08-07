@@ -16,7 +16,8 @@ all:
   ARG tag
   BUILD +build
   FROM debian:bullseye-slim
-  RUN apt-get update && apt-get install -y libpq5
+  RUN apt-get update && apt-get install -y libpq5 ca-certificates
+  RUN update-ca-certificates
   WORKDIR /app
   COPY +build/worker/worker /app/worker
   CMD ["/app/worker"]
