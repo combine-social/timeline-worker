@@ -19,6 +19,7 @@ mod strerr;
 
 #[macro_use]
 extern crate log;
+extern crate openssl_probe;
 extern crate simplelog;
 
 #[cfg(test)]
@@ -27,6 +28,7 @@ mod tests;
 fn load_env() {
     dotenvy::from_filename(".env.local").ok();
     dotenvy::from_filename_override(".env").ok();
+    openssl_probe::init_ssl_cert_env_vars();
 }
 
 fn init_logger() {

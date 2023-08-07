@@ -2358,6 +2358,7 @@ dependencies = [
  "log",
  "megalodon",
  "once_cell",
+ "openssl-probe",
  "queues",
  "redis",
  "regex",
