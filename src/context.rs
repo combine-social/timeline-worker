@@ -68,7 +68,9 @@ fn request_host(request: &ContextRequest) -> Result<String, String> {
         if let Some(host) = url.host_str() {
             Ok(host.to_string())
         } else {
-            Err(format!("Missing host in {}", url))
+            let message = format!("Missing host in {}", url);
+            error!("{}", message);
+            Err(message)
         }
     } else {
         Err(result.err().unwrap().to_string())
@@ -91,8 +93,16 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                 &request.status_id,
                 None, // todo: use cached host sns detection
             )
-            .await?
-            {
+            .await
+            .map_err(|err| {
+                error!(
+                    "fetch_next_context error in get_context for {}#{}: {:?}",
+                    request_host(&request).unwrap_or("unknown-host".to_string()),
+                    &request.status_id,
+                    err
+                );
+                err
+            })? {
                 info!(
                     "Got {} descendants of {} from {} at index {}",
                     context.descendants.len(),
@@ -114,11 +124,19 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                             &ContextRequest {
                                 instance_url: request.instance_url.clone(),
                                 status_id: child.origin_id()?,
-                                status_url: child_url,
+                                status_url: child_url.clone(),
                             },
                             &next_level(&meta),
                         )
-                        .await?;
+                        .await
+                        .map_err(|err| {
+                            error!(
+                                "send_if_not_cached for {} failed: {:?}",
+                                cache::status_key(&request.instance_url, &child_url),
+                                err
+                            );
+                            err
+                        })?;
                     }
                 }
             } else {
