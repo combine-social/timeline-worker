@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install dependencies
         run: |
-          sudo cargo make dep
+          cargo make dep
       - name: Lint and test
         run: |
           cargo make lint_strict
