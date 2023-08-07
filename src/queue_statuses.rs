@@ -28,9 +28,9 @@ fn since() -> Duration {
 
 fn max_timeline_count() -> i32 {
     env::var("MAX_STATUS_COUNT")
-        .unwrap_or("25".to_owned())
+        .unwrap_or("75".to_owned())
         .parse::<i32>()
-        .unwrap_or(25)
+        .unwrap_or(75)
 }
 
 fn host(status: &Status) -> Option<String> {
