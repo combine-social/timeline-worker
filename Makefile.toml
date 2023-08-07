@@ -1,5 +1,5 @@
 [env]
-IMAGE = "ghcr.io/combine-social/timeline-worker"
+IMAGE = "ghcr.io/combine-social/timeline-worker-v2"
 TAG = "latest"
 
 [tasks.earthly]
