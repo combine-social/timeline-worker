@@ -9,7 +9,7 @@ build:
   COPY . .
   RUN cargo make install-clippy
 	RUN cargo make all
-  SAVE ARTIFACT target/release/worker /worker/bin
+  SAVE ARTIFACT target/release/worker /worker/worker
 
 all:
   ARG image
@@ -18,6 +18,6 @@ all:
   FROM debian:bullseye-slim
   RUN apt-get update && apt-get install -y libpq5
   WORKDIR /app
-  COPY +build/worker/bin .
+  COPY +build/worker/worker /app/worker
   CMD ["/app/worker"]
   SAVE IMAGE --push $image:$tag
