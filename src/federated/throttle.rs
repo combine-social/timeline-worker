@@ -62,6 +62,6 @@ async fn wait_if_needed(key: &String, requests_per_minute: Option<i32>) {
 
 async fn update_access_time(key: &String) {
     let mut locks = global_lock().await;
-    info!("setting access time to now for {}", key);
+    debug!("setting access time to now for {}", key);
     locks.insert(key.to_owned(), Instant::now());
 }
