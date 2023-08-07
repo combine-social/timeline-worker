@@ -78,9 +78,9 @@ pub async fn get_remote_account_status_urls(
             }
             Ok(urls)
         } else {
-            Err("Outbox not found".to_owned())
+            Err(format!("Outbox not found for {}", person_url))
         }
     } else {
-        Err("Account not found".to_owned())
+        Err(format!("Account not found for {}", acct))
     }
 }
