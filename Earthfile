@@ -3,7 +3,8 @@ VERSION 0.7
 build:
   FROM rust:1.70
   WORKDIR /app
-  RUN apt-get install -y libpq-dev libpq5
+  ENV DEBIAN_FRONTEND=noninteractive
+  RUN apt-get update && apt-get install -y libpq-dev libpq5
   RUN cargo install cargo-make
   COPY . .
   RUN cargo make install-clippy
