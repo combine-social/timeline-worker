@@ -58,4 +58,4 @@ script = ["earthly +all --image=${IMAGE} --tag=${TAG}"]
 
 [tasks.push]
 dependencies = ["image"]
-script = ["earthly --push +all --image=${IMAGE} --tag=${TAG}"]
+script = ["earthly --ci --push +all --image=${IMAGE} --tag=${TAG}"]
