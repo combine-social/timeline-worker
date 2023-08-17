@@ -1,16 +1,24 @@
-use std::{collections::HashMap, time::Duration};
+use std::{cell::Cell, collections::HashMap, time::Duration};
 
 use futures_util::Future;
 use once_cell::sync::Lazy;
 use tokio::{
-    sync::{Mutex, MutexGuard},
+    sync::Mutex,
     time::{self, Instant},
 };
 
-async fn global_lock() -> MutexGuard<'static, HashMap<String, Instant>> {
-    static mut INSTANCE: Lazy<Mutex<HashMap<String, Instant>>> =
-        Lazy::new(|| Mutex::new(HashMap::new()));
-    unsafe { INSTANCE.lock() }.await
+/// Return distant past - or rather, distant enough for no sleep to be needed
+fn distant_past() -> Instant {
+    Instant::now()
+        .checked_sub(Duration::from_secs(
+            chrono::Duration::minutes(5).num_seconds() as u64,
+        ))
+        .unwrap()
+}
+
+fn global() -> &'static mut Lazy<HashMap<String, Mutex<Cell<Instant>>>> {
+    static mut INSTANCE: Lazy<HashMap<String, Mutex<Cell<Instant>>>> = Lazy::new(HashMap::new);
+    unsafe { &mut INSTANCE }
 }
 
 fn default_rpm() -> i32 {
@@ -37,31 +45,25 @@ where
     F: Fn() -> R,
     R: Future,
 {
-    wait_if_needed(key, requests_per_minute).await;
-    let result = func().await;
-    update_access_time(key).await;
-    result
-}
-
-async fn wait_if_needed(key: &String, requests_per_minute: Option<i32>) {
-    let locks = global_lock().await;
-    if let Some(instant) = locks.get(key) {
-        let max_delay = 60.0 / requests_per_minute.unwrap_or(default_rpm()) as f64;
-        let duration = Instant::now().duration_since(instant.to_owned());
-        let delay = max_delay - duration.as_secs_f64();
-        if delay > 0.0 {
-            info!("waiting {:.1}s on {}", delay, key);
-            time::sleep(Duration::from_secs_f64(delay)).await;
-        } else {
-            info!("no wait needed for {}", key);
-        }
+    let access_times = global();
+    info!("attempting to acquire lock for {}...", key);
+    let cell = access_times
+        .entry(key.to_owned())
+        .or_insert(Mutex::new(Cell::new(distant_past())))
+        .lock()
+        .await;
+    let instant = cell.get();
+    let max_delay = 60.0 / requests_per_minute.unwrap_or(default_rpm()) as f64;
+    let duration = Instant::now().duration_since(instant);
+    let delay = max_delay - duration.as_secs_f64();
+    if delay > 0.0 {
+        info!("waiting {:.1}s on {}", delay, key);
+        time::sleep(Duration::from_secs_f64(delay)).await;
     } else {
-        info!("no lock found for for {}", key);
+        info!("no wait needed for {}", key);
     }
-}
-
-async fn update_access_time(key: &String) {
-    let mut locks = global_lock().await;
-    debug!("setting access time to now for {}", key);
-    locks.insert(key.to_owned(), Instant::now());
+    let result = func().await;
+    info!("setting access time to now for {}", key);
+    cell.set(Instant::now());
+    result
 }
