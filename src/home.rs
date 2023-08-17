@@ -39,7 +39,15 @@ async fn resolve_mentioned_account_statuses(token: &Token, status: &Status) -> R
             continue;
         }
         if !federated::is_following(token, &acct).await? {
-            let urls = federated::get_remote_account_status_urls(&acct, 25).await?;
+            let urls = federated::get_remote_account_status_urls(&acct, 25)
+                .await
+                .unwrap_or_else(|err| {
+                    error!(
+                        "Error getting status urls for account: {}: {:?}",
+                        &acct, err
+                    );
+                    vec![]
+                });
             for url in urls {
                 federated::resolve(token, &url).await;
             }

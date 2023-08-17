@@ -78,9 +78,11 @@ pub async fn get_remote_account_status_urls(
             }
             Ok(urls)
         } else {
-            Err(format!("Outbox not found for {}", person_url))
+            error!("Outbox not found for {}", person_url);
+            Ok(vec![])
         }
     } else {
-        Err(format!("Account not found for {}", acct))
+        error!("Account not found for {}", acct);
+        Ok(vec![])
     }
 }
