@@ -34,6 +34,10 @@ fn get_mentions(status: &Status) -> Vec<String> {
 async fn resolve_mentioned_account_statuses(token: &Token, status: &Status) -> Result<(), String> {
     let accounts = get_mentions(status);
     for acct in accounts {
+        if !acct.contains('@') {
+            warn!("Missing hostname in acct: {}", acct);
+            continue;
+        }
         if !federated::is_following(token, &acct).await? {
             let urls = federated::get_remote_account_status_urls(&acct, 25).await?;
             for url in urls {
