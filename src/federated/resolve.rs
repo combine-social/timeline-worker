@@ -19,19 +19,10 @@ fn search_options() -> Option<&'static SearchInputOptions> {
 }
 
 /// Resolve a remote status on the instance which the token belongs to.
-/// This runs non-blocking on a separate green thread.
 pub async fn resolve(token: &Token, status_url: &String) {
-    let token = token.to_owned();
-    let status_url = status_url.to_owned();
-    tokio::spawn(async {
-        perform_resolve(token, status_url).await;
-    });
-}
-
-async fn perform_resolve(token: Token, status_url: String) {
     let key = &token.registration.instance_url;
     throttle::throttled(key, None, || async {
-        _ = client::authenticated_client(&token)
+        _ = client::authenticated_client(token)
             .search(
                 status_url.to_owned(),
                 &SearchType::Statuses,
