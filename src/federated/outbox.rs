@@ -19,9 +19,9 @@ where
         .header(ACCEPT, "application/json".to_owned())
         .send()
         .await
-        .map_err(|err| here!(err))?
+        .map_err(|err| format!("Error getting {}: {}", &url, here!(err)))?
         .json::<T>()
-        .map_err(|err| here!(err))
+        .map_err(|err| format!("Error formatting {}: {}", &url, here!(err)))
         .await
 }
 
