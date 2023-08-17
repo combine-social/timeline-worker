@@ -20,7 +20,10 @@ where
     T: Serialize + Sized,
 {
     if !cache::has(cache, key).await? {
-        info!("Adding to queue {:?}: {:?}", queue_name, key);
+        info!(
+            "Adding to queue {:?} with cache key {:?}: {:?}",
+            queue_name, key, request
+        );
         cache::set(cache, key, value, None).await?;
         queue::send(queue_name, request).await?;
     } else {

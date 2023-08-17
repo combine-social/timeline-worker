@@ -7,6 +7,7 @@ pub async fn is_following(token: &Token, acct: &String) -> Result<bool, String> 
     let key = &cache::follow_key(&token.username);
     let mut following: Vec<String> = vec![];
     if !cache::has(&mut cache, key).await? {
+        info!("throttled call to verify_account_credentials");
         let account = throttle::throttled(&token.registration.instance_url, None, || async {
             let response = super::client::authenticated_client(token)
                 .verify_account_credentials()
@@ -19,6 +20,7 @@ pub async fn is_following(token: &Token, acct: &String) -> Result<bool, String> 
             error!("Error getting account details: {:?}", err);
             err
         })?;
+        info!("throttled call to get_account_following");
         following = throttle::throttled(&token.registration.instance_url, None, || async {
             super::client::authenticated_client(token)
                 .get_account_following(account.id.clone(), None)

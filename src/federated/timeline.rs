@@ -41,7 +41,7 @@ pub async fn get_home_timeline_page(
     token: &Token,
     max_id: Option<String>,
 ) -> Result<Page<Status>, String> {
-    info!("in get_home_timeline_page");
+    info!("throttled call to get_home_timeline_page");
     throttle::throttled(&cache::user_key(&token.username), None, || async {
         super::client::authenticated_client(token)
             .get_home_timeline(Some(&home_options(max_id.clone())))
@@ -60,6 +60,7 @@ pub async fn get_notification_timeline_page(
     max_id: Option<String>,
 ) -> Result<Page<Notification>, String> {
     let max_id_name = max_id.clone().unwrap_or("None".to_owned());
+    info!("throttled call to get_notifications");
     throttle::throttled(&cache::user_key(&token.username), None, || {
         let max_id = max_id.clone();
         let max_id_name = max_id_name.clone();

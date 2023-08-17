@@ -30,6 +30,7 @@ pub async fn get_context(
     sns: Option<&SNS>,
 ) -> Result<Option<Context>, String> {
     let rpm = 7500 / 5;
+    info!("throttled call to get_status_context");
     let result = throttle::throttled(instance_url, Some(rpm), || async {
         unwrap_context(
             client::anonymous_client(instance_url, sns.cloned())
