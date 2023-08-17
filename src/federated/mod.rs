@@ -26,7 +26,7 @@ mod models;
 mod origin_id;
 mod outbox;
 mod resolve;
-pub mod throttle;
+mod throttle;
 mod timeline;
 
 #[cfg(test)]

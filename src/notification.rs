@@ -4,10 +4,7 @@ use megalodon::entities::Account;
 use url::Url;
 
 use crate::{
-    federated::{
-        self,
-        throttle::{self},
-    },
+    federated::{self},
     repository::tokens::Token,
     strerr::here,
 };
@@ -42,14 +39,12 @@ async fn get_notification_accounts(token: &Token) -> Result<Vec<String>, String>
             "get_notification_timeline_page for {:?}, {:?}",
             &token.username, &max_id
         );
-        let page = throttle::throttled(&token.registration.instance_url, None, || async {
-            federated::get_notification_timeline_page(token, max_id.clone()).await
-        })
-        .await
-        .map_err(|err| {
-            error!("failed get_notification_timeline_page with: {:?}", &err);
-            err
-        })?;
+        let page = federated::get_notification_timeline_page(token, max_id.clone())
+            .await
+            .map_err(|err| {
+                error!("failed get_notification_timeline_page with: {:?}", &err);
+                err
+            })?;
         max_id = page.max_id.clone();
         for notif in page.items.iter() {
             info!("notification: {:?}", &notif);

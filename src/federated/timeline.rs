@@ -11,7 +11,7 @@ use megalodon::{
 use regex::Regex;
 use url::Url;
 
-use crate::{repository::tokens::Token, strerr::here};
+use crate::{cache, federated::throttle, repository::tokens::Token, strerr::here};
 
 use super::Page;
 
@@ -42,36 +42,45 @@ pub async fn get_home_timeline_page(
     max_id: Option<String>,
 ) -> Result<Page<Status>, String> {
     info!("in get_home_timeline_page");
-    super::client::authenticated_client(token)
-        .get_home_timeline(Some(&home_options(max_id.clone())))
-        .await
-        .map_err(|err| here!(err))
-        .map(|response| Page {
-            items: response.json.clone(),
-            max_id: max_id_from_response(&response),
-        })
+    throttle::throttled(&cache::user_key(&token.username), None, || async {
+        super::client::authenticated_client(token)
+            .get_home_timeline(Some(&home_options(max_id.clone())))
+            .await
+            .map_err(|err| here!(err))
+            .map(|response| Page {
+                items: response.json.clone(),
+                max_id: max_id_from_response(&response),
+            })
+    })
+    .await
 }
 
 pub async fn get_notification_timeline_page(
     token: &Token,
     max_id: Option<String>,
 ) -> Result<Page<Notification>, String> {
-    super::client::authenticated_client(token)
-        .get_notifications(Some(&notification_option(max_id.clone())))
-        .await
-        .map_err(|err| {
-            error!(
-                "Error getting notifications for {} (max_id: {}): {:?}",
-                &token.username,
-                &max_id.unwrap_or("None".to_owned()),
-                err
-            );
-            here!(err)
-        })
-        .map(|response| Page {
-            items: response.json(),
-            max_id: max_id_from_response(&response),
-        })
+    let max_id_name = max_id.clone().unwrap_or("None".to_owned());
+    throttle::throttled(&cache::user_key(&token.username), None, || {
+        let max_id = max_id.clone();
+        let max_id_name = max_id_name.clone();
+        async move {
+            super::client::authenticated_client(token)
+                .get_notifications(Some(&notification_option(max_id)))
+                .await
+                .map_err(|err| {
+                    error!(
+                        "Error getting notifications for {} (max_id: {}): {:?}",
+                        &token.username, &max_id_name, err
+                    );
+                    here!(err)
+                })
+                .map(|response| Page {
+                    items: response.json(),
+                    max_id: max_id_from_response(&response),
+                })
+        }
+    })
+    .await
 }
 
 pub fn next_link(link: &str) -> Option<String> {

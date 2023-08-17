@@ -8,10 +8,7 @@ use url::Url;
 use crate::{
     cache::{self, StatusCacheMetaData},
     conditional_queue,
-    federated::{
-        throttle::{self},
-        OriginId, Page,
-    },
+    federated::{OriginId, Page},
     models::ContextRequest,
     repository::tokens::Token,
 };
@@ -60,11 +57,7 @@ where
     let mut max_id: Option<String> = None;
     let mut count = 0;
     loop {
-        let page = throttle::throttled(&token.registration.instance_url, None, || async {
-            pager(max_id.clone()).await
-        })
-        .await
-        .map_err(|err| {
+        let page = pager(max_id.clone()).await.map_err(|err| {
             error!("pager error: {:?}", err);
             err
         })?;
