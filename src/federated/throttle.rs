@@ -1,9 +1,9 @@
-use std::{cell::Cell, collections::HashMap, time::Duration};
+use std::{cell::Cell, collections::HashMap, sync::Arc, time::Duration};
 
 use futures_util::Future;
 use once_cell::sync::Lazy;
 use tokio::{
-    sync::Mutex,
+    sync::{Mutex, RwLock},
     time::{self, Instant},
 };
 
@@ -16,9 +16,12 @@ fn distant_past() -> Instant {
         .unwrap()
 }
 
-fn global() -> &'static mut Lazy<HashMap<String, Mutex<Cell<Instant>>>> {
-    static mut INSTANCE: Lazy<HashMap<String, Mutex<Cell<Instant>>>> = Lazy::new(HashMap::new);
-    unsafe { &mut INSTANCE }
+type AccessTimeMap = Arc<RwLock<HashMap<String, Arc<Mutex<Cell<Instant>>>>>>;
+
+/// Return a singleton hashmap of instances and access times
+fn global() -> AccessTimeMap {
+    static INSTANCE: Lazy<AccessTimeMap> = Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
+    INSTANCE.clone()
 }
 
 fn default_rpm() -> i32 {
@@ -45,13 +48,9 @@ where
     F: Fn() -> R,
     R: Future,
 {
-    let access_times = global();
     info!("attempting to acquire lock for {}...", key);
-    let cell = access_times
-        .entry(key.to_owned())
-        .or_insert(Mutex::new(Cell::new(distant_past())))
-        .lock()
-        .await;
+    let mutex = get_mutex(key).await;
+    let cell = mutex.lock().await;
     let instant = cell.get();
     let max_delay = 60.0 / requests_per_minute.unwrap_or(default_rpm()) as f64;
     let duration = Instant::now().duration_since(instant);
@@ -66,4 +65,40 @@ where
     info!("setting access time to now for {}", key);
     cell.set(Instant::now());
     result
+}
+
+/// Acquire a read lock, get cloned arc'ed cell mutex, and release lock
+async fn get_mutex(key: &String) -> Arc<Mutex<Cell<Instant>>> {
+    ensure_instant(key).await; // ensure that key exists
+    debug!("get_mutex() attempting to acquire read lock for hashmap");
+    let lock = global();
+    let access_times = lock.read().await;
+    let mutex = access_times.get(key).unwrap(); // unwrap is safe, because key exists
+    mutex.to_owned()
+}
+
+async fn ensure_instant(key: &String) {
+    if !has_key(key).await {
+        create_key(key).await;
+    }
+}
+
+/// Acquire a read lock, test for key existance, and release lock
+async fn has_key(key: &String) -> bool {
+    debug!("has_key() attempting to acquire read lock for hashmap");
+    let lock = global();
+    let access_times = lock.read().await;
+    access_times.contains_key(key)
+}
+
+/// Acquire a write lock, create of distant_past for key, and release lock
+async fn create_key(key: &String) {
+    debug!("create_key() attempting to acquire write lock for hashmap...");
+    let lock = global();
+    let mut access_times = lock.write().await;
+    debug!("inserting distant_past() for {}...", key);
+    access_times.insert(
+        key.to_owned(),
+        Arc::new(Mutex::new(Cell::new(distant_past()))),
+    );
 }
