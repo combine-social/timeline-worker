@@ -5,7 +5,7 @@ use std::env;
 use super::connect::Cache;
 
 fn expire_time() -> usize {
-    env::var("POLL_INTERVAL")
+    env::var("CACHE_EXPIRE_TIME")
         .unwrap_or("300".to_owned())
         .parse::<usize>()
         .unwrap_or(60 * 5)
