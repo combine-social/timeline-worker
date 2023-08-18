@@ -53,6 +53,7 @@ pub async fn queue_statuses<F>(
 where
     F: Future<Output = Result<Page<Status>, String>>,
 {
+    let own_instance = &token.registration.instance_url;
     let mut cache = cache::connect().await?;
     let mut max_id: Option<String> = None;
     let mut count = 0;
@@ -83,7 +84,7 @@ where
                 _ = conditional_queue::send_if_not_cached(
                     &mut cache,
                     &token.username,
-                    &cache::status_key(&host.clone(), &status.url.clone().unwrap()),
+                    &cache::status_key(own_instance, &status.url.clone().unwrap()),
                     &ContextRequest {
                         instance_url: host.clone(),
                         status_id: status.origin_id()?,

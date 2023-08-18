@@ -18,10 +18,11 @@ async fn next_context_request(token: &Token) -> Result<Option<ContextRequest>, S
 }
 
 async fn metadata(
+    own_instance: &String,
     request: &ContextRequest,
     cache: &mut Cache,
 ) -> Result<StatusCacheMetaData, String> {
-    let key = cache::status_key(&request.instance_url, &request.status_url);
+    let key = cache::status_key(own_instance, &request.status_url);
     if !cache::has(cache, &key).await? {
         return Ok(StatusCacheMetaData {
             original: request.status_url.clone(),
@@ -79,12 +80,13 @@ fn request_host(request: &ContextRequest) -> Result<String, String> {
 
 pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
     let mut cache = cache::connect().await?;
+    let own_instance = &token.registration.instance_url;
     let queue_name = &token.username;
     let result = next_context_request(token).await;
     info!("next_context_request result: {:?}", &result);
     if let Ok(Some(request)) = result {
-        let meta = metadata(&request, &mut cache).await?;
-        let key = cache::status_key(&request.instance_url, &request.status_id);
+        let meta = metadata(own_instance, &request, &mut cache).await?;
+        let key = cache::status_key(own_instance, &request.status_url);
         cache::set(&mut cache, &key, &meta, None).await?;
         if meta.level <= 2 {
             federated::resolve(token, &request.status_url).await;
@@ -120,7 +122,7 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                         conditional_queue::send_if_not_cached(
                             &mut cache,
                             queue_name,
-                            &cache::status_key(&request.instance_url, &child_url),
+                            &cache::status_key(own_instance, &child_url),
                             &ContextRequest {
                                 instance_url: request.instance_url.clone(),
                                 status_id: child.origin_id()?,
@@ -132,7 +134,7 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                         .map_err(|err| {
                             error!(
                                 "send_if_not_cached for {} failed: {:?}",
-                                cache::status_key(&request.instance_url, &child_url),
+                                cache::status_key(own_instance, &child_url),
                                 err
                             );
                             err
