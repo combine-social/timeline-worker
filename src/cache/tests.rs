@@ -20,6 +20,9 @@ async fn stores_a_value_for_a_key() {
     assert!(cached_result.is_ok());
     let cached: StatusCacheMetaData = cached_result.unwrap();
     assert_eq!(cached.original, meta.original);
+    assert_eq!(cached.created_at.timestamp(), meta.created_at.timestamp());
+    assert_eq!(cached.index, meta.index);
+    assert_eq!(cached.level, meta.level);
 }
 
 #[tokio::test]
