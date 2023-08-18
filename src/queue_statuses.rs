@@ -94,7 +94,7 @@ where
                         original: status.url.clone().unwrap(),
                         created_at: status.created_at,
                         index: i as i32,
-                        level: 0,
+                        level: 1,
                     },
                 )
                 .await;
