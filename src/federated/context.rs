@@ -42,12 +42,28 @@ pub async fn get_context(
     if let Err(error) = result {
         match error {
             megalodon::error::Error::OwnError(ref own_err) => {
-                if own_err.status == Some(401) {
-                    warn!(
-                        "Authentication required for {}#{}, ignoring",
-                        instance_url, status_id
-                    );
-                    Ok(None)
+                if let Some(status) = own_err.status {
+                    if status == 401 || status == 403 {
+                        warn!(
+                            "Authentication required for {}#{}, ignoring",
+                            instance_url, status_id
+                        );
+                        Ok(None)
+                    } else if status >= 404 {
+                        warn!(
+                            "Status not found for {}#{}, ignoring",
+                            instance_url, status_id
+                        );
+                        Ok(None)
+                    } else if status >= 500 {
+                        warn!(
+                            "Internal server for {}#{}, ignoring",
+                            instance_url, status_id
+                        );
+                        Ok(None)
+                    } else {
+                        Err(here!(error))
+                    }
                 } else {
                     Err(here!(error))
                 }
