@@ -129,16 +129,28 @@ async fn queue_statuses_for_timelines(db: Arc<Mutex<ConnectionPool>>) {
                     async move {
                         if verify_token(&token, db).await.is_ok() {
                             let queue_name = &token.username;
-                            if let Err(err) = prepare::prepare_populate_queue(queue_name).await {
-                                error!("Error in prepare_populate_queue: {:?}", err);
-                            }
-                            if let Err(err) = home::queue_home_statuses(&token).await {
-                                error!("Error in queue_home_statuses: {:?}", err);
-                            }
-                            if let Err(err) =
-                                notification::resolve_notification_account_statuses(&token).await
-                            {
-                                error!("Error in resolve_notification_account_statuses: {:?}", err);
+                            if prepare::should_populate_queue(queue_name).await {
+                                if let Err(err) = prepare::prepare_populate_queue(queue_name).await
+                                {
+                                    error!("Error in prepare_populate_queue: {:?}", err);
+                                }
+                                if let Err(err) = home::queue_home_statuses(&token).await {
+                                    error!("Error in queue_home_statuses: {:?}", err);
+                                }
+                                if let Err(err) =
+                                    notification::resolve_notification_account_statuses(&token)
+                                        .await
+                                {
+                                    error!(
+                                        "Error in resolve_notification_account_statuses: {:?}",
+                                        err
+                                    );
+                                }
+                            } else {
+                                info!(
+                                    "Queue {} above threshold, postponing repopulate...",
+                                    &token.username
+                                );
                             }
                         } else {
                             warn!("Could not verify token for: {:?}", &token.username);

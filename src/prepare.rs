@@ -19,12 +19,6 @@ fn threshold() -> u32 {
 pub async fn prepare_populate_queue(queue_name: &String) -> Result<(), String> {
     let mut cache = cache::connect().await?;
     let count = queue::size(queue_name).await?;
-    info!(
-        "Size of queue {} is {}, skip threshold is {}",
-        queue_name,
-        count,
-        threshold()
-    );
     if count < threshold() {
         info!("Proceeding with queue {}", queue_name);
         cache::delete_keys_with_prefix(&mut cache, queue_name).await?;
@@ -32,4 +26,19 @@ pub async fn prepare_populate_queue(queue_name: &String) -> Result<(), String> {
         info!("Skipping {}", queue_name);
     }
     Ok(())
+}
+
+pub async fn should_populate_queue(queue_name: &String) -> bool {
+    if let Ok(count) = queue::size(queue_name).await {
+        info!(
+            "Size of queue {} is {}, skip threshold is {}",
+            queue_name,
+            count,
+            threshold()
+        );
+        count < threshold()
+    } else {
+        error!("Could not get queue size");
+        false
+    }
 }
