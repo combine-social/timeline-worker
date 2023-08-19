@@ -78,7 +78,7 @@ fn request_host(request: &ContextRequest) -> Result<String, String> {
     }
 }
 
-pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
+pub async fn fetch_next_context(token: &Token) -> Result<bool, String> {
     let mut cache = cache::connect().await?;
     let own_instance = &token.registration.instance_url;
     let queue_name = &token.username;
@@ -150,8 +150,9 @@ pub async fn fetch_next_context(token: &Token) -> Result<(), String> {
                 meta.original
             );
         }
+        Ok(true)
     } else {
         info!("Queue for {} is empty", token.username);
+        Ok(false)
     }
-    Ok(())
 }
