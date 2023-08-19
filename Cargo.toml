@@ -5,10 +5,15 @@ edition = "2021"
 
 [dependencies]
 dotenvy = "0.15"
-sqlx = { version = "0.6", features = [ "runtime-tokio-rustls", "postgres", "json", "offline" ] }
-serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1.0", features = ["raw_value"] }
-serde_derive = "1.0.163"
+sqlx = { version = "0.6", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "json",
+    "offline",
+] }
+serde = { version = "<=1.0.171", features = ["derive"] }
+serde_json = { version = "<=1.0.171", features = ["raw_value"] }
+serde_derive = "<=1.0.171"
 futures = "0.3.28"
 futures-util = "0.3.28"
 tokio = { version = "1.28.2", features = ["full"] }
