@@ -41,7 +41,7 @@ impl<'a> Stream for Connection {
                 fail_count: None,
                 registration: Registration {
                     id: 1,
-                    instance_url: String::from("https://exmaple.com"),
+                    instance_url: String::from("example.com"),
                     registration_id: None,
                     name: None,
                     website: None,
