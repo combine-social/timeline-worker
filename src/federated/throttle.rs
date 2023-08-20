@@ -51,9 +51,17 @@ where
     info!("acquiring lock for {}:mutex...", key);
     let manager = global();
     let name = lock_name(key);
-    let lock = manager.lock(&name, ttl(requests_per_minute)).await.unwrap();
-    let result = func().await;
-    info!("unlocking {}:mutex", key);
-    manager.unlock(&lock).await;
-    result
+    _ = manager
+        .lock(&name, ttl(requests_per_minute))
+        .await
+        .map_err(|err| {
+            error!(
+                "@{}#{}: Failed locking {}:mutex: {:?}",
+                file!(),
+                line!(),
+                key,
+                err
+            )
+        });
+    func().await
 }
