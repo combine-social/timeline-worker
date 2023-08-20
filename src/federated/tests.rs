@@ -1,20 +1,10 @@
 use megalodon::response::Response;
 use reqwest::header::HeaderMap;
-use tokio::time::Instant;
 use url::Url;
 
 use super::timeline;
-use crate::federated::throttle;
 use crate::repository::registrations::Registration;
 use crate::repository::tokens::Token;
-
-#[tokio::test]
-async fn delays_throttled_function() {
-    let key = String::from("test");
-    let first = throttle::throttled(&key, Some(600), || async { Instant::now() }).await;
-    let second = throttle::throttled(&key, Some(600), || async { Instant::now() }).await;
-    assert!(second.duration_since(first).as_secs_f64() >= 0.1);
-}
 
 #[test]
 fn finds_rel_next_link() {

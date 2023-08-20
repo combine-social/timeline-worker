@@ -1,27 +1,18 @@
-use std::{cell::Cell, collections::HashMap, sync::Arc, time::Duration};
+use std::{env, sync::Arc};
 
 use futures_util::Future;
 use once_cell::sync::Lazy;
-use tokio::{
-    sync::{Mutex, RwLock},
-    time::{self, Instant},
-};
+use rslock::LockManager;
 
-/// Return distant past - or rather, distant enough for no sleep to be needed
-fn distant_past() -> Instant {
-    Instant::now()
-        .checked_sub(Duration::from_secs(
-            chrono::Duration::minutes(5).num_seconds() as u64,
-        ))
-        .unwrap()
+fn redis_url() -> String {
+    env::var("REDIS_URL").unwrap_or("redis://localhost".to_owned())
 }
 
-type AccessTimeMap = Arc<RwLock<HashMap<String, Arc<Mutex<Cell<Instant>>>>>>;
-
-/// Return a singleton hashmap of instances and access times
-fn global() -> AccessTimeMap {
-    static INSTANCE: Lazy<AccessTimeMap> = Lazy::new(|| Arc::new(RwLock::new(HashMap::new())));
-    INSTANCE.clone()
+/// Return a singleton lock manager
+fn global() -> Arc<LockManager> {
+    static MANAGER: Lazy<Arc<LockManager>> =
+        Lazy::new(|| Arc::new(LockManager::new(vec![redis_url()])));
+    MANAGER.clone()
 }
 
 fn default_rpm() -> i32 {
@@ -29,6 +20,15 @@ fn default_rpm() -> i32 {
     return 10000;
     #[cfg(not(test))]
     30
+}
+
+/// Return time to live in milis
+fn ttl(rpm: Option<i32>) -> usize {
+    60000 / rpm.unwrap_or(default_rpm()) as usize
+}
+
+fn lock_name(key: &String) -> Vec<u8> {
+    format!("{}:mutex", key).as_bytes().to_owned()
 }
 
 /// Perform a task at an instance.
@@ -48,57 +48,12 @@ where
     F: Fn() -> R,
     R: Future,
 {
-    info!("attempting to acquire lock for {}...", key);
-    let mutex = get_mutex(key).await;
-    let cell = mutex.lock().await;
-    let instant = cell.get();
-    let max_delay = 60.0 / requests_per_minute.unwrap_or(default_rpm()) as f64;
-    let duration = Instant::now().duration_since(instant);
-    let delay = max_delay - duration.as_secs_f64();
-    if delay > 0.0 {
-        info!("waiting {:.1}s on {}", delay, key);
-        time::sleep(Duration::from_secs_f64(delay)).await;
-    } else {
-        info!("no wait needed for {}", key);
-    }
+    info!("acquiring lock for {}:mutex...", key);
+    let manager = global();
+    let name = lock_name(key);
+    let lock = manager.lock(&name, ttl(requests_per_minute)).await.unwrap();
     let result = func().await;
-    info!("setting access time to now for {}", key);
-    cell.set(Instant::now());
+    info!("unlocking {}:mutex", key);
+    manager.unlock(&lock).await;
     result
-}
-
-/// Acquire a read lock, get cloned arc'ed cell mutex, and release lock
-async fn get_mutex(key: &String) -> Arc<Mutex<Cell<Instant>>> {
-    ensure_instant(key).await; // ensure that key exists
-    debug!("get_mutex() attempting to acquire read lock for hashmap");
-    let lock = global();
-    let access_times = lock.read().await;
-    let mutex = access_times.get(key).unwrap(); // unwrap is safe, because key exists
-    mutex.to_owned()
-}
-
-async fn ensure_instant(key: &String) {
-    if !has_key(key).await {
-        create_key(key).await;
-    }
-}
-
-/// Acquire a read lock, test for key existance, and release lock
-async fn has_key(key: &String) -> bool {
-    debug!("has_key() attempting to acquire read lock for hashmap");
-    let lock = global();
-    let access_times = lock.read().await;
-    access_times.contains_key(key)
-}
-
-/// Acquire a write lock, create of distant_past for key, and release lock
-async fn create_key(key: &String) {
-    debug!("create_key() attempting to acquire write lock for hashmap...");
-    let lock = global();
-    let mut access_times = lock.write().await;
-    debug!("inserting distant_past() for {}...", key);
-    access_times.insert(
-        key.to_owned(),
-        Arc::new(Mutex::new(Cell::new(distant_past()))),
-    );
 }
