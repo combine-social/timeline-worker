@@ -56,7 +56,11 @@ where
     F: Fn() -> R,
     R: Future,
 {
-    info!("acquiring lock for {}:mutex...", key);
+    info!(
+        "acquiring lock for {}:mutex (with {}ms ttl)...",
+        key,
+        ttl(requests_per_minute)
+    );
     let manager = global();
     let name = lock_name(key);
     _ = acquire_ttl(&manager, &name, ttl(requests_per_minute)).await;
