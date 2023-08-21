@@ -1,8 +1,9 @@
 use std::{env, sync::Arc};
 
+use chrono::Duration;
 use futures_util::Future;
 use once_cell::sync::Lazy;
-use rslock::LockManager;
+use rslock::{LockGuard, LockManager};
 
 fn redis_url() -> String {
     env::var("REDIS_URL").unwrap_or("redis://localhost".to_owned())
@@ -51,17 +52,19 @@ where
     info!("acquiring lock for {}:mutex...", key);
     let manager = global();
     let name = lock_name(key);
-    _ = manager
-        .lock(&name, ttl(requests_per_minute))
-        .await
-        .map_err(|err| {
-            error!(
-                "@{}#{}: Failed locking {}:mutex: {:?}",
-                file!(),
-                line!(),
-                key,
-                err
-            )
-        });
+    _ = acquire(&manager, &name, ttl(requests_per_minute)).await;
     func().await
+}
+
+/// Acquire lock from LockManager.
+///
+/// The build-in acquire is essentially a busy loop, this includes a small delay
+/// to not hammer the data store as hard.
+async fn acquire<'a>(manager: &'a LockManager, resource: &'a [u8], ttl: usize) -> LockGuard<'a> {
+    loop {
+        if let Ok(lock) = manager.lock(resource, ttl).await {
+            return LockGuard { lock };
+        }
+        tokio::time::sleep(Duration::milliseconds(10).to_std().unwrap()).await;
+    }
 }
