@@ -3,7 +3,6 @@ use crate::strerr::here;
 use super::{
     connect,
     consumer::{self},
-    declare,
 };
 use serde::Deserialize;
 use std::any::type_name;
@@ -20,12 +19,6 @@ pub async fn next<T: for<'a> Deserialize<'a> + Sized + Send + Sync>(
 ) -> Result<Option<T>, String> {
     let result = connect::connect().await;
     if let Ok(connection) = result {
-        declare::queue_declare(&connection.channel, queue)
-            .await
-            .map_err(|err| {
-                error!("Error declaring queue: {:?}", err);
-                err
-            })?;
         if let Some(content) = consumer::consume(connection, queue).await? {
             into(&content).map_err(|err| {
                 error!("into {:?} failed: {:?}", type_name::<T>(), &err);
