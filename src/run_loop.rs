@@ -88,6 +88,27 @@ async fn verify_token(token: &Token, db: Arc<Mutex<ConnectionPool>>) -> Result<(
     }
 }
 
+async fn fetch_all_contexts(token: Token) {
+    loop {
+        let result = context::fetch_next_context(&token).await;
+        match result {
+            Ok(more) => {
+                if !more {
+                    info!(
+                        "Finished iterating context requests for {}",
+                        &token.username
+                    );
+                    break;
+                }
+            }
+            Err(error) => {
+                error!("{}", error);
+                break;
+            }
+        }
+    }
+}
+
 async fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) {
     if let Ok(mut connection) = connect(db.clone()).await {
         loop {
@@ -100,26 +121,9 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) {
                                 "fetch_contexts_for_tokens_loop got token for: {:?}",
                                 token.username
                             );
-                            loop {
-                                let result = context::fetch_next_context(&token).await;
-                                match result {
-                                    Ok(more) => {
-                                        if !more {
-                                            info!(
-                                                "Finished iterating context requests for {}",
-                                                &token.username
-                                            );
-                                            break;
-                                        }
-                                    }
-                                    Err(error) => {
-                                        error!("{}", error);
-                                        break;
-                                    }
-                                }
-                            }
-                        } else {
-                            warn!("Could not verify token for {}", &token.username);
+                            tokio::spawn(async move {
+                                fetch_all_contexts(token.to_owned()).await;
+                            });
                         }
                     }
                 })
