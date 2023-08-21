@@ -1,6 +1,6 @@
 use std::{env, sync::Arc};
 
-use chrono::Utc;
+use chrono::Duration;
 use futures_util::Future;
 use once_cell::sync::Lazy;
 use rslock::{Lock, LockManager};
@@ -74,25 +74,11 @@ where
 ///
 /// The build-in acquire is essentially a busy loop, this includes a small delay
 /// to not hammer the data store as hard.
-async fn acquire_ttl<'a>(
-    manager: &'a LockManager,
-    resource: &'a [u8],
-    ttl: usize,
-) -> Option<Lock<'a>> {
-    let start = Utc::now();
+async fn acquire_ttl<'a>(manager: &'a LockManager, resource: &'a [u8], ttl: usize) -> Lock<'a> {
     loop {
         if let Ok(lock) = manager.lock(resource, ttl).await {
-            return Some(lock);
+            return lock;
         }
-        if Utc::now().signed_duration_since(start) > chrono::Duration::seconds(ttl as i64) {
-            warn!("acquiring lock failed after {}s, returning now", ttl);
-            return None;
-        }
-        tokio::time::sleep(
-            chrono::Duration::milliseconds(retry_interval())
-                .to_std()
-                .unwrap(),
-        )
-        .await;
+        tokio::time::sleep(Duration::milliseconds(retry_interval()).to_std().unwrap()).await;
     }
 }
