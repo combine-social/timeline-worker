@@ -3,10 +3,17 @@ use std::{env, sync::Arc};
 use chrono::Duration;
 use futures_util::Future;
 use once_cell::sync::Lazy;
-use rslock::{LockGuard, LockManager};
+use rslock::{Lock, LockManager};
 
 fn redis_url() -> String {
     env::var("REDIS_URL").unwrap_or("redis://localhost".to_owned())
+}
+
+fn retry_interval() -> i64 {
+    env::var("REDIS_LOCK_RETRY_INTERVAL")
+        .unwrap_or("10".to_owned())
+        .parse()
+        .unwrap_or(10)
 }
 
 /// Return a singleton lock manager
@@ -52,19 +59,22 @@ where
     info!("acquiring lock for {}:mutex...", key);
     let manager = global();
     let name = lock_name(key);
-    _ = acquire(&manager, &name, ttl(requests_per_minute)).await;
+    _ = acquire_ttl(&manager, &name, ttl(requests_per_minute)).await;
     func().await
 }
 
-/// Acquire lock from LockManager.
+/// Acquire lock from LockManager, with the given ttl.
+///
+/// Unlike built-in acquire, this lock is not automatically unlocked before the end of the ttl.
+/// It can still be manually unlocked or extended.
 ///
 /// The build-in acquire is essentially a busy loop, this includes a small delay
 /// to not hammer the data store as hard.
-async fn acquire<'a>(manager: &'a LockManager, resource: &'a [u8], ttl: usize) -> LockGuard<'a> {
+async fn acquire_ttl<'a>(manager: &'a LockManager, resource: &'a [u8], ttl: usize) -> Lock<'a> {
     loop {
         if let Ok(lock) = manager.lock(resource, ttl).await {
-            return LockGuard { lock };
+            return lock;
         }
-        tokio::time::sleep(Duration::milliseconds(10).to_std().unwrap()).await;
+        tokio::time::sleep(Duration::milliseconds(retry_interval()).to_std().unwrap()).await;
     }
 }
