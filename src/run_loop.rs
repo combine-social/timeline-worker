@@ -169,8 +169,12 @@ async fn queue_statuses_for_timelines(db: Arc<Mutex<ConnectionPool>>) {
 
 pub async fn perform_loop(db: ConnectionPool) {
     let db = Arc::new(Mutex::new(db));
-    _ = tokio::join!(
-        fetch_contexts_for_tokens_loop(db.clone()),
-        queue_statuses_for_timelines(db.clone())
-    );
+    let db2 = db.clone();
+    let fetch = tokio::spawn(async move {
+        fetch_contexts_for_tokens_loop(db).await;
+    });
+    let queue = tokio::spawn(async move {
+        queue_statuses_for_timelines(db2).await;
+    });
+    futures::future::join_all(vec![fetch, queue]).await;
 }
