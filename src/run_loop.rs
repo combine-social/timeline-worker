@@ -1,7 +1,6 @@
 use std::{env, sync::Arc, time::Duration};
 
 use futures_util::StreamExt;
-use tokio::sync::Mutex;
 
 use crate::{
     context, federated, home, notification, prepare,
@@ -48,9 +47,7 @@ fn max_fail_count() -> i32 {
         .unwrap_or(60 * 5)
 }
 
-async fn connect(db: Arc<Mutex<ConnectionPool>>) -> Result<Connection, String> {
-    info!("Locking db mutex...");
-    let db = db.lock().await;
+async fn connect(db: Arc<ConnectionPool>) -> Result<Connection, String> {
     info!("Connecting to db...");
     repository::connect(&db).await.map_err(|err| here!(err))
 }
@@ -60,7 +57,7 @@ async fn connect(db: Arc<Mutex<ConnectionPool>>) -> Result<Connection, String> {
 /// Check that a token can be used to create an authenticated client
 /// and update the fail count. Delete tokens whose fail count goes
 /// over the set threshold.
-async fn verify_token(token: &Token, db: Arc<Mutex<ConnectionPool>>) -> Result<(), String> {
+async fn verify_token(token: &Token, db: Arc<ConnectionPool>) -> Result<(), String> {
     match connect(db).await {
         Ok(mut connection) => {
             let result = federated::has_verified_authenticated_client(token).await;
@@ -88,7 +85,7 @@ async fn verify_token(token: &Token, db: Arc<Mutex<ConnectionPool>>) -> Result<(
     }
 }
 
-async fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) {
+async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
     if let Ok(mut connection) = connect(db.clone()).await {
         loop {
             tokens::find_by_worker_id(&mut connection, worker_id())
@@ -116,7 +113,7 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<Mutex<ConnectionPool>>) {
     }
 }
 
-async fn queue_statuses_for_timelines(db: Arc<Mutex<ConnectionPool>>) {
+async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
     if let Ok(mut connection) = connect(db.clone()).await {
         loop {
             tokens::find_by_worker_id(&mut connection, worker_id())
@@ -168,13 +165,13 @@ async fn queue_statuses_for_timelines(db: Arc<Mutex<ConnectionPool>>) {
 }
 
 pub async fn perform_loop(db: ConnectionPool) {
-    let db = Arc::new(Mutex::new(db));
-    let db2 = db.clone();
+    let db = Arc::new(db);
+    let copy = db.clone();
     let fetch = tokio::spawn(async move {
         fetch_contexts_for_tokens_loop(db).await;
     });
     let queue = tokio::spawn(async move {
-        queue_statuses_for_timelines(db2).await;
+        queue_statuses_for_timelines(copy).await;
     });
     futures::future::join_all(vec![fetch, queue]).await;
 }
