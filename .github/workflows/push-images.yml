@@ -33,10 +33,7 @@ jobs:
           version: "0.7"
 
       - name: Setup rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Setup cargo make
         uses: davidB/rust-cargo-make@v1
