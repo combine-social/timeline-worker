@@ -38,7 +38,7 @@ fn host(status: &Status) -> Option<String> {
         .and_then(|url| url.host_str().map(|s| s.to_owned()))
 }
 
-fn status_or_reblog(status: &Status) -> Status {
+pub fn status_or_reblog(status: &Status) -> Status {
     if status.reblog.is_some() {
         *status.reblog.to_owned().unwrap()
     } else {

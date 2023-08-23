@@ -17,9 +17,20 @@ async fn resolve_page_mentioned_account_statuses(token: Token, page: Page<Status
     }
 }
 
+async fn set_do_not_resolve_home_page(token: &Token, page: &Page<Status>) -> Result<(), String> {
+    for status in page.items.iter() {
+        let status = queue_statuses::status_or_reblog(status);
+        if let Some(url) = status.url {
+            federated::set_do_not_resolve(token, &url).await?;
+        }
+    }
+    Ok(())
+}
+
 pub async fn queue_home_statuses(token: &Token) -> Result<(), String> {
     queue_statuses::queue_statuses(token, |max_id| async move {
         let page = federated::get_home_timeline_page(token, max_id).await?;
+        set_do_not_resolve_home_page(token, &page).await?;
         info!("page has {:?} statuses", page.items.len());
         let token = token.to_owned();
         let copy = page.clone();
