@@ -39,6 +39,7 @@ pub fn is_remote(token: &Token, status_url: &str) -> Result<bool, String> {
     Ok(token.registration.instance_url != host(status_url)?)
 }
 
+/// Set resolve key to avoid multiple resolves of same url.
 pub async fn set_do_not_resolve(token: &Token, status_url: &str) -> Result<(), String> {
     let mut cache = cache::connect().await?;
     let key = cache::resolve_key(&token.registration.instance_url, &status_url.to_string());
@@ -46,7 +47,6 @@ pub async fn set_do_not_resolve(token: &Token, status_url: &str) -> Result<(), S
     Ok(())
 }
 
-/// Set resolve key to avoid multiple resolves of same url.
 /// Returns true if the key wasn't already set (if it hasn't been resolved yet).
 async fn should_resolve(token: &Token, status_url: &str) -> Result<bool, String> {
     let mut cache = cache::connect().await?;
