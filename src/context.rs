@@ -78,12 +78,6 @@ fn request_host(request: &ContextRequest) -> Result<String, String> {
     }
 }
 
-fn resolve(token: Token, url: String) {
-    tokio::spawn(async move {
-        federated::resolve(&token, &url).await;
-    });
-}
-
 pub async fn fetch_next_context(token: &Token) -> Result<bool, String> {
     let mut cache = cache::connect().await?;
     let own_instance = &token.registration.instance_url;
@@ -95,7 +89,7 @@ pub async fn fetch_next_context(token: &Token) -> Result<bool, String> {
         let key = cache::status_key(own_instance, &request.status_url);
         cache::set(&mut cache, &key, &meta, None).await?;
         if meta.level <= 2 {
-            resolve(token.to_owned(), request.status_url.clone());
+            federated::resolve(token, &request.status_url).await;
             if let Some(context) = federated::get_context(
                 &request_host(&request)?,
                 &request.status_id,
