@@ -95,10 +95,15 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
                         if verify_token(&token, db).await.is_ok() {
                             info!(
                                 "fetch_contexts_for_tokens_loop got token for: {:?}",
-                                token.username
+                                &token.username
                             );
                             tokio::spawn(async move {
-                                _ = context::fetch_next_context(&token.to_owned()).await;
+                                while context::fetch_next_context(&token.to_owned())
+                                    .await
+                                    .is_ok_and(|more| more)
+                                {
+                                    info!("Fetching next context for: {}", &token.username);
+                                }
                             });
                         }
                     }
