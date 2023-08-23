@@ -14,10 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+      - uses: dtolnay/rust-toolchain@stable
       - uses: davidB/rust-cargo-make@v1
       - uses: actions/checkout@v3
       - name: Install dependencies
