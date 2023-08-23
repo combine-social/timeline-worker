@@ -39,6 +39,21 @@ pub fn is_remote(token: &Token, status_url: &str) -> Result<bool, String> {
     Ok(token.registration.instance_url != host(status_url)?)
 }
 
+pub async fn set_do_not_resolve(token: &Token, status_url: &str) -> Result<(), String> {
+    let mut cache = cache::connect().await?;
+    let key = cache::resolve_key(&token.registration.instance_url, &status_url.to_string());
+    cache::set(&mut cache, &key, &true, Some(24 * 60 * 60)).await?;
+    Ok(())
+}
+
+/// Set resolve key to avoid multiple resolves of same url.
+/// Returns true if the key wasn't already set (if it hasn't been resolved yet).
+async fn should_resolve(token: &Token, status_url: &str) -> Result<bool, String> {
+    let mut cache = cache::connect().await?;
+    let key = cache::resolve_key(&token.registration.instance_url, &status_url.to_string());
+    cache::has(&mut cache, &key).await
+}
+
 /// Resolve a remote status on the instance which the token belongs to.
 pub async fn resolve(token: &Token, status_url: &String) {
     if !is_remote(token, status_url).is_ok_and(|remote| remote) {
@@ -47,6 +62,16 @@ pub async fn resolve(token: &Token, status_url: &String) {
             &status_url, &token.registration.instance_url
         );
         return;
+    }
+    if should_resolve(token, status_url)
+        .await
+        .is_ok_and(|should| !should)
+    {
+        info!("Status {} is already resolved, skipping", status_url);
+        return;
+    }
+    if let Err(err) = set_do_not_resolve(token, status_url).await {
+        error!("Could not set_do_not_resolve: {}", err);
     }
     let key = &cache::user_key(&token.username);
     info!("throttled call to search ({})", &status_url);

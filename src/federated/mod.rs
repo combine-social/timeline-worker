@@ -8,7 +8,7 @@ pub use context::*;
 pub use follow::*;
 #[cfg(not(test))]
 pub use outbox::*;
-pub use resolve::resolve;
+pub use resolve::{resolve, set_do_not_resolve};
 #[cfg(not(test))]
 pub use timeline::{get_home_timeline_page, get_notification_timeline_page};
 
