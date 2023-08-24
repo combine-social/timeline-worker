@@ -48,7 +48,7 @@ pub async fn set_do_not_resolve(token: &Token, status_url: &str) -> Result<(), S
 }
 
 /// Returns true if the key wasn't already set (if it hasn't been resolved yet).
-async fn should_resolve(token: &Token, status_url: &str) -> Result<bool, String> {
+pub async fn should_resolve(token: &Token, status_url: &str) -> Result<bool, String> {
     let mut cache = cache::connect().await?;
     let key = cache::resolve_key(&token.registration.instance_url, &status_url.to_string());
     let has_key = cache::has(&mut cache, &key).await?;

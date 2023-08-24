@@ -109,3 +109,32 @@ async fn identifies_local_status() {
             .is_ok_and(|remote| remote)
     );
 }
+
+#[tokio::test]
+async fn resolves_statuses_that_are_not_cached() {
+    let token = Token {
+        id: 0,
+        username: String::from("user"),
+        access_token: String::from("token"),
+        token_type: None,
+        scope: None,
+        created_at: None,
+        fail_count: None,
+        registration: Registration {
+            id: 1,
+            instance_url: String::from("example.com"),
+            registration_id: None,
+            name: None,
+            website: None,
+            redirect_uri: String::from("https://example.com/token"),
+            client_id: String::from("client"),
+            client_secret: String::from("secret"),
+            vapid_key: None,
+            nonce: String::from("nonce"),
+        },
+        worker_id: 1,
+    };
+    let result = super::resolve::should_resolve(&token, "https://example.com/id/1").await;
+    assert!(result.is_ok());
+    assert!(result.is_ok_and(|should| should));
+}
