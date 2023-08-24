@@ -1,12 +1,22 @@
 use std::time::Duration;
 
+use crate::repository::registrations;
 use megalodon::{error::Kind, Megalodon, SNS};
 
 use crate::{repository::tokens::Token, strerr::here};
 
+fn registration_sns(token: &Token) -> SNS {
+    token
+        .registration
+        .sns
+        .clone()
+        .unwrap_or(registrations::SNS::Mastodon)
+        .into()
+}
+
 pub fn authenticated_client(token: &Token) -> Box<dyn Megalodon + Send + Sync> {
     megalodon::generator(
-        SNS::Mastodon, // TODO: update tokens table to include sns
+        registration_sns(token),
         format!("https://{}", token.registration.instance_url),
         Some(token.access_token.clone()),
         None,

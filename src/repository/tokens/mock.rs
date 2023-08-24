@@ -5,7 +5,7 @@ use std::{
 
 use futures_util::Stream;
 
-use super::super::registrations::Registration;
+use super::super::registrations::{Registration, SNS};
 use super::{super::mock::Connection, Token};
 
 pub fn find_by_worker_id(con: &mut Connection, _worker_id: i32) -> impl Stream<Item = Token> + '_ {
@@ -50,6 +50,7 @@ impl<'a> Stream for Connection {
                     client_secret: String::from("secret"),
                     vapid_key: None,
                     nonce: String::from("nonce"),
+                    sns: Some(SNS::Mastodon),
                 },
                 worker_id: 1,
             };

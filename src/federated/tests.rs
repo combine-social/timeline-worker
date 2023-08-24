@@ -3,7 +3,7 @@ use reqwest::header::HeaderMap;
 use url::Url;
 
 use super::timeline;
-use crate::repository::registrations::Registration;
+use crate::repository::registrations::{Registration, SNS};
 use crate::repository::tokens::Token;
 
 #[test]
@@ -71,6 +71,7 @@ async fn identifies_remote_status() {
             client_secret: String::from("secret"),
             vapid_key: None,
             nonce: String::from("nonce"),
+            sns: Some(SNS::Mastodon),
         },
         worker_id: 1,
     };
@@ -101,6 +102,7 @@ async fn identifies_local_status() {
             client_secret: String::from("secret"),
             vapid_key: None,
             nonce: String::from("nonce"),
+            sns: Some(SNS::Mastodon),
         },
         worker_id: 1,
     };
@@ -131,6 +133,7 @@ async fn resolves_statuses_that_are_not_cached() {
             client_secret: String::from("secret"),
             vapid_key: None,
             nonce: String::from("nonce"),
+            sns: Some(SNS::Mastodon),
         },
         worker_id: 1,
     };
