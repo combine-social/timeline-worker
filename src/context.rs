@@ -90,21 +90,19 @@ pub async fn fetch_next_context(token: &Token) -> Result<bool, String> {
         cache::set(&mut cache, &key, &meta, None).await?;
         if meta.level <= 2 {
             federated::resolve(token, &request.status_url).await;
-            if let Some(context) = federated::get_context(
-                &request_host(&request)?,
-                &request.status_id,
-                None, // todo: use cached host sns detection
-            )
-            .await
-            .map_err(|err| {
-                error!(
-                    "fetch_next_context error in get_context for {}#{}: {:?}",
-                    request_host(&request).unwrap_or("unknown-host".to_string()),
-                    &request.status_id,
-                    err
-                );
-                err
-            })? {
+            if let Some(context) =
+                federated::get_context(&request_host(&request)?, &request.status_id)
+                    .await
+                    .map_err(|err| {
+                        error!(
+                            "fetch_next_context error in get_context for {}#{}: {:?}",
+                            request_host(&request).unwrap_or("unknown-host".to_string()),
+                            &request.status_id,
+                            err
+                        );
+                        err
+                    })?
+            {
                 info!(
                     "Got {} descendants of {} from {} at index {}",
                     context.descendants.len(),

@@ -5,6 +5,8 @@ use megalodon::{error::Kind, Megalodon, SNS};
 
 use crate::{repository::tokens::Token, strerr::here};
 
+use super::detect;
+
 fn registration_sns(token: &Token) -> SNS {
     token
         .registration
@@ -12,6 +14,18 @@ fn registration_sns(token: &Token) -> SNS {
         .clone()
         .unwrap_or(registrations::SNS::Mastodon)
         .into()
+}
+
+async fn instance_sns(instance_url: &str) -> SNS {
+    detect::detect_sns(instance_url)
+        .await
+        .unwrap_or_else(|err| {
+            warn!(
+                "Detecting instance software on {} failed, assuming Mastodon and 🤞: {}",
+                instance_url, err
+            );
+            SNS::Mastodon
+        }) // Assume mastodon on failure - this will likely fail at a later stage
 }
 
 pub fn authenticated_client(token: &Token) -> Box<dyn Megalodon + Send + Sync> {
@@ -23,9 +37,9 @@ pub fn authenticated_client(token: &Token) -> Box<dyn Megalodon + Send + Sync> {
     )
 }
 
-pub fn anonymous_client(url: &str, sns: Option<SNS>) -> Box<dyn Megalodon + Send + Sync> {
+pub async fn anonymous_client(url: &str) -> Box<dyn Megalodon + Send + Sync> {
     megalodon::generator(
-        sns.unwrap_or(SNS::Mastodon),
+        instance_sns(url).await,
         format!("https://{}", url),
         None,
         None,

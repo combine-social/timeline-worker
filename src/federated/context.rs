@@ -1,6 +1,4 @@
-use megalodon::{
-    entities::Context, megalodon::GetStatusContextInputOptions, response::Response, SNS,
-};
+use megalodon::{entities::Context, megalodon::GetStatusContextInputOptions, response::Response};
 
 use crate::strerr::here;
 
@@ -27,13 +25,13 @@ fn unwrap_context(
 pub async fn get_context(
     instance_url: &String,
     status_id: &str,
-    sns: Option<&SNS>,
 ) -> Result<Option<Context>, String> {
     let rpm = 7500 / 5;
     info!("throttled call to get_status_context");
     let result = throttle::throttled(instance_url, Some(rpm), || async {
         unwrap_context(
-            client::anonymous_client(instance_url, sns.cloned())
+            client::anonymous_client(instance_url)
+                .await
                 .get_status_context(status_id.to_owned(), context_options())
                 .await,
         )
@@ -51,7 +49,7 @@ pub async fn get_context(
                         Ok(None)
                     } else if status >= 404 {
                         warn!(
-                            "Status not found for {}#{}, ignoring",
+                            "Status context not found for {}#{}, ignoring",
                             instance_url, status_id
                         );
                         Ok(None)

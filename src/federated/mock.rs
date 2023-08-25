@@ -1,13 +1,10 @@
 use std::{cell::RefCell, collections::HashMap};
 
-use megalodon::{
-    entities::{Context, Notification, Status},
-    SNS,
-};
+use megalodon::entities::{Context, Notification, Status};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-use crate::repository::tokens::Token;
+use crate::repository::{registrations::SNS, tokens::Token};
 
 use super::Page;
 
@@ -54,7 +51,6 @@ async fn get<T: for<'a> Deserialize<'a>>() -> Result<T, String> {
 pub async fn get_context(
     _instance_url: &String,
     _status_id: &str,
-    _sns: Option<&SNS>,
 ) -> Result<Option<Context>, String> {
     Ok(Some(get::<Context>().await?))
 }
@@ -106,4 +102,8 @@ pub async fn is_following(_token: &Token, _acct: &String) -> Result<bool, String
 
 pub async fn has_verified_authenticated_client(_token: &Token) -> Result<(), String> {
     Ok(())
+}
+
+pub async fn detect_sns(_instance_url: &str) -> Result<SNS, String> {
+    Ok(SNS::Mastodon)
 }

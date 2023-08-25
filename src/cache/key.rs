@@ -13,3 +13,7 @@ pub fn resolve_key(instance_url: &String, status_url: &String) -> String {
 pub fn follow_key(username: &String) -> String {
     format!("v2:{}:following", username)
 }
+
+pub fn sns_key(instance_url: &String) -> String {
+    format!("v2:{}:sns", instance_url)
+}

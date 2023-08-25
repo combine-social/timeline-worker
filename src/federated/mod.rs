@@ -5,6 +5,8 @@ pub use client::*;
 #[cfg(not(test))]
 pub use context::*;
 #[cfg(not(test))]
+pub use detect::*;
+#[cfg(not(test))]
 pub use follow::*;
 #[cfg(not(test))]
 pub use outbox::*;
@@ -20,6 +22,7 @@ pub use mock::*;
 
 mod client;
 mod context;
+mod detect;
 mod follow;
 mod models;
 mod origin_id;
