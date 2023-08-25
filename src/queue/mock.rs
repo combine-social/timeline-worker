@@ -78,7 +78,6 @@ pub async fn next<T: for<'a> Deserialize<'a> + Sized + Send + Sync>(
 
 pub async fn size(queue_name: &str) -> Result<u32, String> {
     connect();
-    connect();
     unsafe {
         if let Some(mutex) = &connection.store {
             let rc = mutex.lock().await;
