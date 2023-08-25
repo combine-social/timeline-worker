@@ -117,30 +117,37 @@ pub async fn fetch_next_context(token: &Token) -> Result<bool, String> {
                         continue;
                     }
                     if let Some(child_url) = child.url.clone() {
-                        conditional_queue::send_if_not_cached(
-                            &mut cache,
-                            queue_name,
-                            &cache::status_key(own_instance, &child_url),
-                            &ContextRequest {
-                                instance_url: request.instance_url.clone(),
-                                status_id: child.origin_id()?,
-                                status_url: child_url.clone(),
-                            },
-                            &next_level(&meta),
-                        )
-                        .await
-                        .map_err(|err| {
-                            error!(
-                                "send_if_not_cached for {} failed: {:?}",
-                                cache::status_key(own_instance, &child_url),
-                                err
-                            );
-                            err
-                        })?;
+                        match child.origin_id().await {
+                            Ok(id) => {
+                                _ = conditional_queue::send_if_not_cached(
+                                    &mut cache,
+                                    queue_name,
+                                    &cache::status_key(own_instance, &child_url),
+                                    &ContextRequest {
+                                        instance_url: request.instance_url.clone(),
+                                        status_id: id,
+                                        status_url: child_url.clone(),
+                                    },
+                                    &next_level(&meta),
+                                )
+                                .await
+                                .map_err(|err| {
+                                    error!(
+                                        "send_if_not_cached for {} failed: {:?}",
+                                        cache::status_key(own_instance, &child_url),
+                                        err
+                                    );
+                                    err
+                                });
+                            }
+                            Err(err) => {
+                                warn!("Could not get origin id for {}: {}", child.id, err);
+                            }
+                        }
                     }
                 }
             } else {
-                error!("get_contect for {:?} failed", request);
+                error!("get_context for {:?} failed", request);
             }
         } else {
             warn!(

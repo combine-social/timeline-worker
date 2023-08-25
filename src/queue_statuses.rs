@@ -59,7 +59,7 @@ where
     let mut count = 0;
     loop {
         let page = pager(max_id.clone()).await.map_err(|err| {
-            error!("pager error: {:?}", err);
+            error!("Pager error: {:?}", err);
             err
         })?;
         max_id = page.max_id.clone();
@@ -81,29 +81,36 @@ where
                 return Ok(());
             }
             if let Some(host) = host(&status) {
-                _ = conditional_queue::send_if_not_cached(
-                    &mut cache,
-                    &token.username,
-                    &cache::status_key(own_instance, &status.url.clone().unwrap()),
-                    &ContextRequest {
-                        instance_url: host.clone(),
-                        status_id: status.origin_id()?,
-                        status_url: status.url.clone().unwrap(),
-                    },
-                    &StatusCacheMetaData {
-                        original: status.url.clone().unwrap(),
-                        created_at: status.created_at,
-                        index: i as i32,
-                        level: 1,
-                    },
-                )
-                .await;
+                match status.origin_id().await {
+                    Ok(id) => {
+                        _ = conditional_queue::send_if_not_cached(
+                            &mut cache,
+                            &token.username,
+                            &cache::status_key(own_instance, &status.url.clone().unwrap()),
+                            &ContextRequest {
+                                instance_url: host.clone(),
+                                status_id: id,
+                                status_url: status.url.clone().unwrap(),
+                            },
+                            &StatusCacheMetaData {
+                                original: status.url.clone().unwrap(),
+                                created_at: status.created_at,
+                                index: i as i32,
+                                level: 1,
+                            },
+                        )
+                        .await;
+                    }
+                    Err(err) => {
+                        warn!("Could not get origin id for {}: {}", status.id, err);
+                    }
+                }
             } else {
-                warn!("no host for {:?}", &status);
+                warn!("No host for {:?}", &status);
             }
         }
         if page.items.is_empty() || max_id.is_none() {
-            info!("page size: {:?}, max_id: {:?}", page.items.len(), &max_id);
+            info!("Page size: {:?}, max_id: {:?}", page.items.len(), &max_id);
             return Ok(());
         }
     }
