@@ -34,9 +34,12 @@ pub async fn queue_home_statuses(token: &Token) -> Result<(), String> {
         info!("page has {:?} statuses", page.items.len());
         let token = token.to_owned();
         let copy = page.clone();
+        #[cfg(not(test))]
         tokio::spawn(async move {
             resolve_page_mentioned_account_statuses(token, copy).await;
         });
+        #[cfg(test)]
+        resolve_page_mentioned_account_statuses(token, copy).await;
         Ok(page)
     })
     .await
