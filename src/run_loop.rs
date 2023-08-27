@@ -86,8 +86,8 @@ async fn verify_token(token: &Token, db: Arc<ConnectionPool>) -> Result<(), Stri
 }
 
 async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
-    if let Ok(mut connection) = connect(db.clone()).await {
-        loop {
+    loop {
+        if let Ok(mut connection) = connect(db.clone()).await {
             tokens::find_by_worker_id(&mut connection, worker_id())
                 .for_each_concurrent(None, |token| {
                     let db = db.clone();
@@ -105,22 +105,24 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
                                     info!("Fetching next context for: {}", &token.username);
                                 }
                             });
+                        } else {
+                            warn!("Could not verify token for {}", &token.username);
                         }
                     }
                 })
                 .await;
-            info!(
-                "Waiting: {:?}s before fetching contexts for tokens...",
-                process_interval().as_secs()
-            );
-            tokio::time::sleep(process_interval()).await;
         }
+        info!(
+            "Waiting: {:?}s before fetching contexts for tokens...",
+            process_interval().as_secs()
+        );
+        tokio::time::sleep(process_interval()).await;
     }
 }
 
 async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
-    if let Ok(mut connection) = connect(db.clone()).await {
-        loop {
+    loop {
+        if let Ok(mut connection) = connect(db.clone()).await {
             tokens::find_by_worker_id(&mut connection, worker_id())
                 .for_each_concurrent(None, |token| {
                     info!(
@@ -160,12 +162,12 @@ async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
                     }
                 })
                 .await;
-            info!(
-                "Waiting: {:?}s before processing timelines for tokens...",
-                poll_interval().as_secs()
-            );
-            tokio::time::sleep(poll_interval()).await;
         }
+        info!(
+            "Waiting: {:?}s before processing timelines for tokens...",
+            poll_interval().as_secs()
+        );
+        tokio::time::sleep(poll_interval()).await;
     }
 }
 
