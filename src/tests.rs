@@ -1,6 +1,8 @@
 use chrono::Utc;
 use megalodon::entities::Account;
 
+use crate::notification;
+
 #[test]
 fn gets_user_at_hostname_acct() {
     let account = Account {
