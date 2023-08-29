@@ -39,6 +39,17 @@ pub async fn get_context(
     .await;
     if let Err(error) = result {
         match error {
+            megalodon::error::Error::JsonError(err) => {
+                warn!(
+                    "JSON parse error for {}#{}: {:?}",
+                    instance_url, status_id, err
+                );
+                Ok(None)
+            }
+            megalodon::error::Error::ParseError(err) => {
+                warn!("Parse error for {}#{}: {:?}", instance_url, status_id, err);
+                Ok(None)
+            }
             megalodon::error::Error::OwnError(ref own_err) => {
                 if let Some(status) = own_err.status {
                     if status == 401 || status == 403 {
