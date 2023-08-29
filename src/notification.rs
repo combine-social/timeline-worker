@@ -80,23 +80,25 @@ pub async fn schedule_notification_account_statuses(token: &Token) -> Result<(),
     let accounts = get_notification_accounts(token).await?;
     for acct in accounts {
         if !federated::is_following(token, &acct).await? {
-            let urls =
-                federated::get_remote_account_status_urls(&acct, max_account_prefetch()).await?;
-            for (index, url) in urls.into_iter().enumerate() {
-                if let Some(status_id) = url.split('/').last() {
-                    _ = send::send_if_needed(
-                        token,
-                        own_instance,
-                        &url,
-                        &status_id.to_string(),
-                        &StatusCacheMetaData {
-                            original: url.clone(),
-                            created_at: Utc::now(),
-                            index: index as i32,
-                            level: 1,
-                        },
-                    )
-                    .await;
+            if let Ok(urls) =
+                federated::get_remote_account_status_urls(&acct, max_account_prefetch()).await
+            {
+                for (index, url) in urls.into_iter().enumerate() {
+                    if let Some(status_id) = url.split('/').last() {
+                        _ = send::send_if_needed(
+                            token,
+                            own_instance,
+                            &url,
+                            &status_id.to_string(),
+                            &StatusCacheMetaData {
+                                original: url.clone(),
+                                created_at: Utc::now(),
+                                index: index as i32,
+                                level: 1,
+                            },
+                        )
+                        .await;
+                    }
                 }
             }
         }
