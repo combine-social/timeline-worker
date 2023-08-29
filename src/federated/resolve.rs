@@ -9,6 +9,7 @@ use super::throttle::{self};
 
 fn search_options() -> Option<&'static SearchInputOptions> {
     Some(&SearchInputOptions {
+        r#type: Some(SearchType::Statuses),
         limit: Some(1),
         max_id: None,
         min_id: None,
@@ -78,11 +79,7 @@ pub async fn resolve(token: &Token, status_url: &String) {
     info!("throttled call to search ({})", &status_url);
     throttle::throttled(key, None, || async {
         _ = client::authenticated_client(token)
-            .search(
-                status_url.to_owned(),
-                &SearchType::Statuses,
-                search_options(),
-            )
+            .search(status_url.to_owned(), search_options())
             .await;
     })
     .await;
