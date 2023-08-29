@@ -124,45 +124,44 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
     }
 }
 
+async fn perform_repopulate(token: Token, db: Arc<ConnectionPool>) {
+    info!(
+        "queue_statuses_for_timelines got token for: {:?}",
+        &token.username
+    );
+    if verify_token(&token, db).await.is_ok() {
+        let queue_name = format!("v2:{}", &token.username);
+        if prepare::should_populate_queue(&queue_name).await {
+            if let Err(err) = prepare::prepare_populate_queue(&queue_name).await {
+                error!("Error in prepare_populate_queue: {:?}", err);
+            }
+            if let Err(err) = home::queue_home_statuses(&token).await {
+                error!("Error in queue_home_statuses: {:?}", err);
+            }
+            if let Err(err) = notification::schedule_notification_account_statuses(&token).await {
+                error!("Error in resolve_notification_account_statuses: {:?}", err);
+            }
+        } else {
+            info!(
+                "Queue {} above threshold, postponing repopulate...",
+                &token.username
+            );
+        }
+    } else {
+        warn!("Could not verify token for: {:?}", &token.username);
+    }
+}
+
 async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
     loop {
         if let Ok(mut connection) = connect(db.clone()).await {
             tokens::find_by_worker_id(&mut connection, worker_id())
                 .for_each_concurrent(None, |token| {
-                    info!(
-                        "queue_statuses_for_timelines got token for: {:?}",
-                        &token.username
-                    );
                     let db = db.clone();
                     async move {
-                        if verify_token(&token, db).await.is_ok() {
-                            let queue_name = format!("v2:{}", &token.username);
-                            if prepare::should_populate_queue(&queue_name).await {
-                                if let Err(err) = prepare::prepare_populate_queue(&queue_name).await
-                                {
-                                    error!("Error in prepare_populate_queue: {:?}", err);
-                                }
-                                if let Err(err) = home::queue_home_statuses(&token).await {
-                                    error!("Error in queue_home_statuses: {:?}", err);
-                                }
-                                if let Err(err) =
-                                    notification::schedule_notification_account_statuses(&token)
-                                        .await
-                                {
-                                    error!(
-                                        "Error in resolve_notification_account_statuses: {:?}",
-                                        err
-                                    );
-                                }
-                            } else {
-                                info!(
-                                    "Queue {} above threshold, postponing repopulate...",
-                                    &token.username
-                                );
-                            }
-                        } else {
-                            warn!("Could not verify token for: {:?}", &token.username);
-                        }
+                        tokio::spawn(async {
+                            perform_repopulate(token, db).await;
+                        });
                     }
                 })
                 .await;
