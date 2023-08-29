@@ -66,7 +66,7 @@ pub async fn get_remote_account_status_urls(
                         items
                             .iter()
                             .filter_map(|item| item_url(item.clone()))
-                            .take(limit - items.len())
+                            .take(limit)
                             .collect(),
                     ]
                     .concat();
@@ -76,6 +76,7 @@ pub async fn get_remote_account_status_urls(
                 }
                 page_url = page.next;
             }
+            urls.truncate(limit);
             Ok(urls)
         } else {
             error!("Outbox not found for {}", person_url);
