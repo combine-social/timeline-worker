@@ -77,12 +77,19 @@ pub async fn get_context(
                     Err(here!(error))
                 }
             }
+            megalodon::error::Error::RequestError(error) => {
+                error!(
+                    "Failed making context request for {:?}#{:?}: {:?}",
+                    instance_url, status_id, error
+                );
+                Ok(None)
+            }
             _ => {
                 error!(
                     "Failed getting context for {:?}#{:?}: {:?}",
                     instance_url, status_id, error
                 );
-                Err(here!(error))
+                Ok(None)
             }
         }
     } else {
