@@ -107,6 +107,7 @@ pub async fn fetch_next_context(token: &Token) -> Result<bool, String> {
                         continue;
                     }
                     if let Some(child_url) = child.url.clone() {
+                        federated::resolve(token, &child_url).await;
                         match child.origin_id().await {
                             Ok(id) => {
                                 _ = send::send_if_needed(
