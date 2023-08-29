@@ -6,11 +6,10 @@ use megalodon::entities::Status;
 use url::Url;
 
 use crate::{
-    cache::{self, StatusCacheMetaData},
-    conditional_queue,
+    cache::StatusCacheMetaData,
     federated::{OriginId, Page},
-    models::ContextRequest,
     repository::tokens::Token,
+    send,
 };
 
 fn since() -> Duration {
@@ -53,8 +52,6 @@ pub async fn queue_statuses<F>(
 where
     F: Future<Output = Result<Page<Status>, String>>,
 {
-    let own_instance = &token.registration.instance_url;
-    let mut cache = cache::connect().await?;
     let mut max_id: Option<String> = None;
     let mut count = 0;
     loop {
@@ -83,15 +80,11 @@ where
             if let Some(host) = host(&status) {
                 match status.origin_id().await {
                     Ok(id) => {
-                        _ = conditional_queue::send_if_not_cached(
-                            &mut cache,
-                            &token.username,
-                            &cache::status_key(own_instance, &status.url.clone().unwrap()),
-                            &ContextRequest {
-                                instance_url: host.clone(),
-                                status_id: id,
-                                status_url: status.url.clone().unwrap(),
-                            },
+                        _ = send::send_if_needed(
+                            token,
+                            &host.clone(),
+                            &status.url.clone().unwrap(),
+                            &id,
                             &StatusCacheMetaData {
                                 original: status.url.clone().unwrap(),
                                 created_at: status.created_at,

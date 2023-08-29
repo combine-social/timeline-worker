@@ -49,7 +49,11 @@ fn max_fail_count() -> i32 {
 
 async fn connect(db: Arc<ConnectionPool>) -> Result<Connection, String> {
     info!("Connecting to db...");
-    repository::connect(&db).await.map_err(|err| here!(err))
+    repository::connect(&db).await.map_err(|err| {
+        let err = here!(err);
+        error!("Error connecting to db: {}", err);
+        err
+    })
 }
 
 /// Verify token
@@ -67,8 +71,8 @@ async fn verify_token(token: &Token, db: Arc<ConnectionPool>) -> Result<(), Stri
                 let fail_count = token.fail_count.unwrap_or(0) + 1;
                 if fail_count > max_fail_count() {
                     warn!(
-                        "Fail-count threshold exceeded for {:?}, deleting",
-                        token.username
+                        "Fail-count threshold exceeded for {}, deleting",
+                        &token.username
                     );
                     repository::tokens::delete(&mut connection, token).await?;
                 } else {
@@ -132,9 +136,9 @@ async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
                     let db = db.clone();
                     async move {
                         if verify_token(&token, db).await.is_ok() {
-                            let queue_name = &token.username;
-                            if prepare::should_populate_queue(queue_name).await {
-                                if let Err(err) = prepare::prepare_populate_queue(queue_name).await
+                            let queue_name = format!("v2:{}", &token.username);
+                            if prepare::should_populate_queue(&queue_name).await {
+                                if let Err(err) = prepare::prepare_populate_queue(&queue_name).await
                                 {
                                     error!("Error in prepare_populate_queue: {:?}", err);
                                 }
@@ -142,7 +146,7 @@ async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
                                     error!("Error in queue_home_statuses: {:?}", err);
                                 }
                                 if let Err(err) =
-                                    notification::resolve_notification_account_statuses(&token)
+                                    notification::schedule_notification_account_statuses(&token)
                                         .await
                                 {
                                     error!(
@@ -171,14 +175,18 @@ async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
     }
 }
 
-pub async fn perform_loop(db: ConnectionPool) {
+pub async fn perform_queue(db: ConnectionPool) {
     let db = Arc::new(db);
-    let copy = db.clone();
-    let fetch = tokio::spawn(async move {
+    _ = tokio::spawn(async move {
+        queue_statuses_for_timelines(db).await;
+    })
+    .await;
+}
+
+pub async fn perform_fetch(db: ConnectionPool) {
+    let db = Arc::new(db);
+    _ = tokio::spawn(async move {
         fetch_contexts_for_tokens_loop(db).await;
-    });
-    let queue = tokio::spawn(async move {
-        queue_statuses_for_timelines(copy).await;
-    });
-    futures::future::join_all(vec![fetch, queue]).await;
+    })
+    .await;
 }

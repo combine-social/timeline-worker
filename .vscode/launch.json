@@ -5,14 +5,29 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch worker",
+      "name": "Launch scheduler",
       "type": "lldb",
       "request": "launch",
       "program": "${workspaceFolder}/target/debug/worker",
       "args": [],
       "cwd": "${workspaceFolder}",
       "env": {
-        "DATABASE_URL": "postgresql://root:test@localhost:5432/test"
+        "DATABASE_URL": "postgresql://root:test@localhost:5432/test",
+        "MODE": "schedule",
+        "POLL_INTERVAL": "10"
+      },
+      "preLaunchTask": "build worker"
+    },
+    {
+      "name": "Launch processor",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/worker",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "DATABASE_URL": "postgresql://root:test@localhost:5432/test",
+        "MODE": "process"
       },
       "preLaunchTask": "build worker"
     }

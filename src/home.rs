@@ -1,14 +1,17 @@
+use chrono::Utc;
 use megalodon::entities::Status;
 
 use crate::{
+    cache::StatusCacheMetaData,
     federated::{self, Page},
     queue_statuses,
     repository::tokens::Token,
+    send,
 };
 
-async fn resolve_page_mentioned_account_statuses(token: Token, page: Page<Status>) {
+async fn schedule_page_mentioned_account_statuses(token: Token, page: Page<Status>) {
     for status in page.items.iter() {
-        _ = resolve_mentioned_account_statuses(&token, status)
+        _ = schedule_mentioned_account_statuses(&token, status)
             .await
             .map_err(|err| {
                 error!("resolve_mentioned_account_statuses error: {:?}", err);
@@ -36,10 +39,10 @@ pub async fn queue_home_statuses(token: &Token) -> Result<(), String> {
         let copy = page.clone();
         #[cfg(not(test))]
         tokio::spawn(async move {
-            resolve_page_mentioned_account_statuses(token, copy).await;
+            schedule_page_mentioned_account_statuses(token, copy).await;
         });
         #[cfg(test)]
-        resolve_page_mentioned_account_statuses(token, copy).await;
+        schedule_page_mentioned_account_statuses(token, copy).await;
         Ok(page)
     })
     .await
@@ -53,7 +56,8 @@ fn get_mentions(status: &Status) -> Vec<String> {
         .collect()
 }
 
-async fn resolve_mentioned_account_statuses(token: &Token, status: &Status) -> Result<(), String> {
+async fn schedule_mentioned_account_statuses(token: &Token, status: &Status) -> Result<(), String> {
+    let own_instance = &token.registration.instance_url;
     let accounts = get_mentions(status);
     for acct in accounts {
         if !acct.contains('@') {
@@ -70,8 +74,22 @@ async fn resolve_mentioned_account_statuses(token: &Token, status: &Status) -> R
                     );
                     vec![]
                 });
-            for url in urls {
-                federated::resolve(token, &url).await;
+            for (index, url) in urls.iter().enumerate() {
+                if let Some(status_id) = url.split('/').last() {
+                    _ = send::send_if_needed(
+                        token,
+                        own_instance,
+                        url,
+                        &status_id.to_string(),
+                        &StatusCacheMetaData {
+                            original: url.clone(),
+                            created_at: Utc::now(),
+                            index: index as i32,
+                            level: 1,
+                        },
+                    )
+                    .await;
+                }
             }
         }
     }

@@ -1,4 +1,4 @@
-use std::process;
+use std::{env, process};
 
 use log::LevelFilter;
 use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode};
@@ -15,6 +15,7 @@ mod queue;
 mod queue_statuses;
 mod repository;
 mod run_loop;
+mod send;
 mod strerr;
 
 #[macro_use]
@@ -41,6 +42,20 @@ fn init_logger() {
     .unwrap();
 }
 
+enum Mode {
+    Process,
+    Schedule,
+}
+
+fn mode() -> Mode {
+    let mode = env::var("MODE").expect("MODE must be set to either process or schedule");
+    match mode.as_str() {
+        "process" => Mode::Process,
+        "schedule" => Mode::Schedule,
+        _ => panic!("MODE must be set to either process or schedule"),
+    }
+}
+
 #[tokio::main]
 async fn main() {
     load_env();
@@ -50,5 +65,13 @@ async fn main() {
         process::exit(-1);
     });
     info!("⚡️[server]: DB connection up!");
-    run_loop::perform_loop(db).await;
+
+    match mode() {
+        Mode::Schedule => {
+            run_loop::perform_queue(db).await;
+        }
+        Mode::Process => {
+            run_loop::perform_fetch(db).await;
+        }
+    }
 }
