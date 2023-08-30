@@ -1,6 +1,9 @@
+#[derive(Debug)]
 pub struct Connection {
     pub taken: bool,
 }
+
+#[derive(Debug)]
 pub struct ConnectionPool {}
 
 pub async fn create_pool() -> Result<ConnectionPool, sqlx::Error> {

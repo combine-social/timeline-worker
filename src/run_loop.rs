@@ -1,6 +1,7 @@
-use std::{env, sync::Arc, time::Duration};
+use std::{env, time::Duration};
 
 use futures_util::StreamExt;
+use once_cell::sync::OnceCell;
 
 use crate::{
     context, federated, home, notification, prepare,
@@ -47,9 +48,9 @@ fn max_fail_count() -> i32 {
         .unwrap_or(60 * 5)
 }
 
-async fn connect(db: Arc<ConnectionPool>) -> Result<Connection, String> {
+async fn connect(db: &ConnectionPool) -> Result<Connection, String> {
     info!("Connecting to db...");
-    repository::connect(&db).await.map_err(|err| {
+    repository::connect(db).await.map_err(|err| {
         let err = here!(err);
         error!("Error connecting to db: {}", err);
         err
@@ -61,7 +62,7 @@ async fn connect(db: Arc<ConnectionPool>) -> Result<Connection, String> {
 /// Check that a token can be used to create an authenticated client
 /// and update the fail count. Delete tokens whose fail count goes
 /// over the set threshold.
-async fn verify_token(token: &Token, db: Arc<ConnectionPool>) -> Result<(), String> {
+async fn verify_token(token: &Token, db: &ConnectionPool) -> Result<(), String> {
     match connect(db).await {
         Ok(mut connection) => {
             let result = federated::has_verified_authenticated_client(token).await;
@@ -89,30 +90,44 @@ async fn verify_token(token: &Token, db: Arc<ConnectionPool>) -> Result<(), Stri
     }
 }
 
-async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
+async fn perform_fetch_contexts(token: Token) {
+    static DB: OnceCell<ConnectionPool> = OnceCell::new();
+    if DB.get().is_none() {
+        let pool = repository::create_pool()
+            .await
+            .expect("Error connecting to Postgres: ");
+        _ = DB.set(pool);
+        info!("⚡️[server]: DB connection up!");
+    }
+    let db = DB.get().unwrap();
+    if verify_token(&token, db).await.is_ok() {
+        info!(
+            "fetch_contexts_for_tokens_loop got token for: {:?}",
+            &token.username
+        );
+        tokio::spawn(async move {
+            while context::fetch_next_context(&token.to_owned())
+                .await
+                .is_ok_and(|more| more)
+            {
+                info!("Fetching next context for: {}", &token.username);
+            }
+        });
+    } else {
+        warn!("Could not verify token for {}", &token.username);
+    }
+}
+
+async fn fetch_contexts_for_tokens_loop() {
+    let db = repository::create_pool()
+        .await
+        .expect("Error connecting to Postgres: ");
+    info!("⚡️[server]: DB connection up!");
     loop {
-        if let Ok(mut connection) = connect(db.clone()).await {
+        if let Ok(mut connection) = connect(&db).await {
             tokens::find_by_worker_id(&mut connection, worker_id())
-                .for_each_concurrent(None, |token| {
-                    let db = db.clone();
-                    async move {
-                        if verify_token(&token, db).await.is_ok() {
-                            info!(
-                                "fetch_contexts_for_tokens_loop got token for: {:?}",
-                                &token.username
-                            );
-                            tokio::spawn(async move {
-                                while context::fetch_next_context(&token.to_owned())
-                                    .await
-                                    .is_ok_and(|more| more)
-                                {
-                                    info!("Fetching next context for: {}", &token.username);
-                                }
-                            });
-                        } else {
-                            warn!("Could not verify token for {}", &token.username);
-                        }
-                    }
+                .for_each_concurrent(None, |token| async move {
+                    perform_fetch_contexts(token).await;
                 })
                 .await;
         }
@@ -124,7 +139,16 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
     }
 }
 
-async fn perform_repopulate(token: Token, db: Arc<ConnectionPool>) {
+async fn perform_repopulate(token: Token) {
+    static DB: OnceCell<ConnectionPool> = OnceCell::new();
+    if DB.get().is_none() {
+        let pool = repository::create_pool()
+            .await
+            .expect("Error connecting to Postgres: ");
+        _ = DB.set(pool);
+        info!("⚡️[server]: DB connection up!");
+    }
+    let db = DB.get().unwrap();
     info!(
         "queue_statuses_for_timelines got token for: {:?}",
         &token.username
@@ -152,17 +176,18 @@ async fn perform_repopulate(token: Token, db: Arc<ConnectionPool>) {
     }
 }
 
-async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
+async fn queue_statuses_for_timelines() {
+    let db = repository::create_pool()
+        .await
+        .expect("Error connecting to Postgres: ");
+    info!("⚡️[server]: DB connection up!");
     loop {
-        if let Ok(mut connection) = connect(db.clone()).await {
+        if let Ok(mut connection) = connect(&db).await {
             tokens::find_by_worker_id(&mut connection, worker_id())
-                .for_each_concurrent(None, |token| {
-                    let db = db.clone();
-                    async move {
-                        tokio::spawn(async {
-                            perform_repopulate(token, db).await;
-                        });
-                    }
+                .for_each_concurrent(None, |token| async move {
+                    tokio::spawn(async {
+                        perform_repopulate(token).await;
+                    });
                 })
                 .await;
         }
@@ -174,18 +199,16 @@ async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
     }
 }
 
-pub async fn perform_queue(db: ConnectionPool) {
-    let db = Arc::new(db);
+pub async fn perform_queue() {
     _ = tokio::spawn(async move {
-        queue_statuses_for_timelines(db).await;
+        queue_statuses_for_timelines().await;
     })
     .await;
 }
 
-pub async fn perform_fetch(db: ConnectionPool) {
-    let db = Arc::new(db);
+pub async fn perform_fetch() {
     _ = tokio::spawn(async move {
-        fetch_contexts_for_tokens_loop(db).await;
+        fetch_contexts_for_tokens_loop().await;
     })
     .await;
 }

@@ -1,4 +1,4 @@
-use std::{env, process};
+use std::env;
 
 use log::LevelFilter;
 use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode};
@@ -34,7 +34,7 @@ fn load_env() {
 
 fn init_logger() {
     CombinedLogger::init(vec![TermLogger::new(
-        LevelFilter::Info,
+        LevelFilter::Warn,
         Config::default(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
@@ -60,18 +60,13 @@ fn mode() -> Mode {
 async fn main() {
     load_env();
     init_logger();
-    let db = repository::create_pool().await.unwrap_or_else(|err| {
-        error!("Error connecting to Postgres: {}", err);
-        process::exit(-1);
-    });
-    info!("⚡️[server]: DB connection up!");
 
     match mode() {
         Mode::Schedule => {
-            run_loop::perform_queue(db).await;
+            run_loop::perform_queue().await;
         }
         Mode::Process => {
-            run_loop::perform_fetch(db).await;
+            run_loop::perform_fetch().await;
         }
     }
 }
