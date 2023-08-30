@@ -35,7 +35,7 @@ fn load_env() {
 
 fn init_logger() {
     CombinedLogger::init(vec![TermLogger::new(
-        LevelFilter::Warn,
+        LevelFilter::Info,
         Config::default(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
