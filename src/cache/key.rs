@@ -17,3 +17,7 @@ pub fn follow_key(username: &String) -> String {
 pub fn sns_key(instance_url: &String) -> String {
     format!("v2:{}:sns", instance_url)
 }
+
+pub fn tokens_prefix(worker_id: i32) -> String {
+    format!("v2:tokens:worker:{}", worker_id)
+}

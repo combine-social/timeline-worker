@@ -17,6 +17,7 @@ mod repository;
 mod run_loop;
 mod send;
 mod strerr;
+mod tokens;
 
 #[macro_use]
 extern crate log;
