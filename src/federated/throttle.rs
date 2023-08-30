@@ -1,4 +1,4 @@
-use std::{env, sync::Arc};
+use std::env;
 
 use chrono::Duration;
 use futures_util::Future;
@@ -14,13 +14,6 @@ fn retry_interval() -> i64 {
         .unwrap_or("10".to_owned())
         .parse()
         .unwrap_or(10)
-}
-
-/// Return a singleton lock manager
-fn global() -> Arc<LockManager> {
-    static MANAGER: Lazy<Arc<LockManager>> =
-        Lazy::new(|| Arc::new(LockManager::new(vec![redis_url()])));
-    MANAGER.clone()
 }
 
 fn default_rpm() -> i32 {
@@ -56,14 +49,14 @@ where
     F: Fn() -> R,
     R: Future,
 {
+    static MANAGER: Lazy<LockManager> = Lazy::new(|| LockManager::new(vec![redis_url()]));
     info!(
         "acquiring lock for {}:mutex (with {}ms ttl)...",
         key,
         ttl(requests_per_minute)
     );
-    let manager = global();
     let name = lock_name(key);
-    _ = acquire_ttl(&manager, &name, ttl(requests_per_minute)).await;
+    _ = acquire_ttl(&MANAGER, &name, ttl(requests_per_minute)).await;
     func().await
 }
 
