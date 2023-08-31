@@ -12,10 +12,14 @@ pub async fn refresh_tokens(worker_id: i32) -> Result<(), String> {
     let mut cache = cache::connect().await?;
     let pool = repository::create_pool().await.map_err(|err| here!(err))?;
     let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
-    let tokens = repository::tokens::find_by_worker_id(&mut connection, worker_id).await?;
-    for token in tokens.iter() {
+    let persistent = repository::tokens::find_by_worker_id(&mut connection, worker_id).await?;
+    for token in persistent.iter() {
         let key = cache::token_key(worker_id, token.id);
-        cache::set(&mut cache, &key, token, Some(EXPIRY)).await?;
+        let mut pinged = token.to_owned();
+        let cached: Result<Token, String> = cache::get(&mut cache, &key).await;
+        pinged.ping_at = cached.ok().and_then(|t| t.ping_at);
+        let key = cache::token_key(worker_id, token.id);
+        cache::set(&mut cache, &key, &pinged, Some(EXPIRY)).await?;
     }
     Ok(())
 }
