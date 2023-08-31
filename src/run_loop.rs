@@ -141,12 +141,19 @@ async fn perform_repopulate(token: Token) {
 
 async fn queue_statuses_for_timelines() {
     loop {
-        _ = tokens::refresh_tokens(worker_id()).await;
-        if let Ok(tokens) = tokens::get_tokens(worker_id()).await {
-            for token in tokens {
-                tokio::spawn(async {
-                    perform_repopulate(token).await;
-                });
+        if let Err(err) = tokens::refresh_tokens(worker_id()).await {
+            error!("Error refreshing tokens: {:?}", err);
+        }
+        match tokens::get_tokens(worker_id()).await {
+            Ok(tokens) => {
+                for token in tokens {
+                    tokio::spawn(async {
+                        perform_repopulate(token).await;
+                    });
+                }
+            }
+            Err(err) => {
+                error!("Error getting tokens: {:?}", err);
             }
         }
         info!(

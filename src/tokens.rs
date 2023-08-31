@@ -14,7 +14,7 @@ pub async fn refresh_tokens(worker_id: i32) -> Result<(), String> {
     let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
     let tokens = repository::tokens::find_by_worker_id(&mut connection, worker_id).await?;
     for token in tokens.iter() {
-        let key = format!("{}:{}", cache::tokens_prefix(worker_id), token.id);
+        let key = cache::token_key(worker_id, token.id);
         cache::set(&mut cache, &key, token, Some(EXPIRY)).await?;
     }
     Ok(())
@@ -22,12 +22,12 @@ pub async fn refresh_tokens(worker_id: i32) -> Result<(), String> {
 
 pub async fn get_tokens(worker_id: i32) -> Result<Vec<Token>, String> {
     let mut cache = cache::connect().await?;
-    let tokens = cache::get_keys_with_prefix(&mut cache, &cache::tokens_prefix(worker_id))
-        .await?
-        .iter()
-        .map(|token| serde_json::from_str(token))
-        .filter_map(|row| row.ok())
-        .collect::<Vec<Token>>();
+    let keys = cache::get_keys_with_prefix(&mut cache, &cache::tokens_prefix(worker_id)).await?;
+    let mut tokens = vec![];
+    for key in keys {
+        let token = cache::get(&mut cache, &key).await?;
+        tokens.push(token);
+    }
     Ok(tokens)
 }
 
@@ -50,7 +50,7 @@ pub async fn update_token_fail_count(
 
 pub async fn delete_token(worker_id: i32, token: &Token) -> Result<(), String> {
     let mut cache = cache::connect().await?;
-    let key = format!("{}:{}", cache::tokens_prefix(worker_id), token.id);
+    let key = cache::token_key(worker_id, token.id);
     cache::delete_key(&mut cache, &key).await?;
     let pool = repository::create_pool().await.map_err(|err| here!(err))?;
     let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
@@ -61,7 +61,7 @@ pub async fn ping_token(worker_id: i32, token: &Token) -> Result<Token, String> 
     let mut token = token.to_owned();
     token.ping_at = Some(Utc::now().timestamp() as i32);
     let mut cache = cache::connect().await?;
-    let key = format!("{}:{}", cache::tokens_prefix(worker_id), token.id);
+    let key = cache::token_key(worker_id, token.id);
     cache::set(&mut cache, &key, &token, Some(EXPIRY)).await?;
     Ok(token)
 }
