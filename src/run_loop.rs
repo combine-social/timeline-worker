@@ -119,6 +119,7 @@ async fn perform_repopulate(token: Token) {
     if verify_token(&token).await.is_ok() {
         let queue_name = format!("v2:{}", &token.username);
         if prepare::should_populate_queue(&queue_name).await {
+            _ = tokens::clear_token_ping(worker_id(), &token).await;
             if let Err(err) = prepare::prepare_populate_queue(&queue_name).await {
                 error!("Error in prepare_populate_queue: {:?}", err);
             }

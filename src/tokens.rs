@@ -69,3 +69,12 @@ pub async fn ping_token(worker_id: i32, token: &Token) -> Result<Token, String> 
     cache::set(&mut cache, &key, &token, Some(EXPIRY)).await?;
     Ok(token)
 }
+
+pub async fn clear_token_ping(worker_id: i32, token: &Token) -> Result<Token, String> {
+    let mut token = token.to_owned();
+    token.ping_at = None;
+    let mut cache = cache::connect().await?;
+    let key = cache::token_key(worker_id, token.id);
+    cache::set(&mut cache, &key, &token, Some(EXPIRY)).await?;
+    Ok(token)
+}
