@@ -1,6 +1,6 @@
 [env]
 IMAGE = "ghcr.io/combine-social/timeline-worker-v2"
-TAG = "2.3.0"
+TAG = "2.3.1"
 
 [tasks.earthly]
 script = ["brew install earthly", "earthly bootstrap"]
