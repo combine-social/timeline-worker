@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{clone::Clone, convert::From};
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct Registration {
     pub id: i32,
     pub instance_url: String,

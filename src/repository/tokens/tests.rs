@@ -1,5 +1,3 @@
-use futures_util::StreamExt;
-
 use crate::repository::{self, tokens};
 
 #[tokio::test]
@@ -8,10 +6,10 @@ async fn finds_a_token() {
     assert!(result.is_ok());
     let pool = result.unwrap();
     if let Ok(mut connection) = repository::connect(&pool).await {
-        let mut tokens = tokens::find_by_worker_id(&mut connection, 1);
-        let next = tokens.next().await;
-        assert!(next.is_some());
-        let token = next.unwrap();
+        let result = tokens::find_by_worker_id(&mut connection, 1).await;
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        let token = &tokens[0];
         assert_eq!(token.access_token, "token".to_owned());
     }
 }

@@ -1,15 +1,11 @@
-use std::{env, sync::Arc, time::Duration};
+use std::{env, time::Duration};
 
-use futures_util::StreamExt;
+use chrono::Utc;
 
 use crate::{
     context, federated, home, notification, prepare,
-    repository::{
-        self,
-        tokens::{self, Token},
-        Connection, ConnectionPool,
-    },
-    strerr::here,
+    repository::tokens::{PingAt, Token},
+    tokens,
 };
 
 fn worker_id() -> i32 {
@@ -47,74 +43,65 @@ fn max_fail_count() -> i32 {
         .unwrap_or(60 * 5)
 }
 
-async fn connect(db: Arc<ConnectionPool>) -> Result<Connection, String> {
-    info!("Connecting to db...");
-    repository::connect(&db).await.map_err(|err| {
-        let err = here!(err);
-        error!("Error connecting to db: {}", err);
-        err
-    })
-}
-
 /// Verify token
 ///
 /// Check that a token can be used to create an authenticated client
 /// and update the fail count. Delete tokens whose fail count goes
 /// over the set threshold.
-async fn verify_token(token: &Token, db: Arc<ConnectionPool>) -> Result<(), String> {
-    match connect(db).await {
-        Ok(mut connection) => {
-            let result = federated::has_verified_authenticated_client(token).await;
-            if result.is_ok() {
-                repository::tokens::update_fail_count(&mut connection, token, 0).await?;
-            } else {
-                let fail_count = token.fail_count.unwrap_or(0) + 1;
-                if fail_count > max_fail_count() {
-                    warn!(
-                        "Fail-count threshold exceeded for {}, deleting",
-                        &token.username
-                    );
-                    repository::tokens::delete(&mut connection, token).await?;
-                } else {
-                    repository::tokens::update_fail_count(&mut connection, token, fail_count)
-                        .await?;
-                }
+async fn verify_token(token: &Token) -> Result<(), String> {
+    let result = federated::has_verified_authenticated_client(token).await;
+    if result.is_ok() {
+        tokens::update_token_fail_count(worker_id(), token, 0).await?;
+    } else {
+        let fail_count = token.fail_count.unwrap_or(0) + 1;
+        if fail_count > max_fail_count() {
+            warn!(
+                "Fail-count threshold exceeded for {}, deleting",
+                &token.username
+            );
+            tokens::delete_token(worker_id(), token).await?;
+        } else {
+            tokens::update_token_fail_count(worker_id(), token, fail_count).await?;
+        }
+    }
+    result
+}
+
+async fn perform_fetch_contexts(token: Token) {
+    if verify_token(&token).await.is_ok() {
+        info!(
+            "fetch_contexts_for_tokens_loop got token for: {:?}",
+            &token.username
+        );
+        const TIMEOUT: i64 = 300; // 5 minute timeout
+        if Utc::now()
+            .signed_duration_since(token.latest_ping())
+            .num_seconds()
+            < TIMEOUT
+        {
+            return;
+        }
+        tokio::spawn(async move {
+            _ = tokens::ping_token(worker_id(), &token).await;
+            while context::fetch_next_context(&token.to_owned())
+                .await
+                .is_ok_and(|more| more)
+            {
+                info!("Fetching next context for: {}", &token.username);
+                _ = tokens::ping_token(worker_id(), &token).await;
             }
-            result
-        }
-        Err(err) => {
-            error!("Error connecting to db: {:?}", err);
-            Err(err)
-        }
+        });
+    } else {
+        warn!("Could not verify token for {}", &token.username);
     }
 }
 
-async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
+async fn fetch_contexts_for_tokens_loop() {
     loop {
-        if let Ok(mut connection) = connect(db.clone()).await {
-            tokens::find_by_worker_id(&mut connection, worker_id())
-                .for_each_concurrent(None, |token| {
-                    let db = db.clone();
-                    async move {
-                        if verify_token(&token, db).await.is_ok() {
-                            info!(
-                                "fetch_contexts_for_tokens_loop got token for: {:?}",
-                                &token.username
-                            );
-                            tokio::spawn(async move {
-                                while context::fetch_next_context(&token.to_owned())
-                                    .await
-                                    .is_ok_and(|more| more)
-                                {
-                                    info!("Fetching next context for: {}", &token.username);
-                                }
-                            });
-                        } else {
-                            warn!("Could not verify token for {}", &token.username);
-                        }
-                    }
-                })
-                .await;
+        if let Ok(tokens) = tokens::get_tokens(worker_id()).await {
+            for token in tokens {
+                perform_fetch_contexts(token).await;
+            }
         }
         info!(
             "Waiting: {:?}s before fetching contexts for tokens...",
@@ -124,14 +111,15 @@ async fn fetch_contexts_for_tokens_loop(db: Arc<ConnectionPool>) {
     }
 }
 
-async fn perform_repopulate(token: Token, db: Arc<ConnectionPool>) {
+async fn perform_repopulate(token: Token) {
     info!(
-        "queue_statuses_for_timelines got token for: {:?}",
+        "queue_statuses_for_timelines got token for: {}",
         &token.username
     );
-    if verify_token(&token, db).await.is_ok() {
+    if verify_token(&token).await.is_ok() {
         let queue_name = format!("v2:{}", &token.username);
         if prepare::should_populate_queue(&queue_name).await {
+            _ = tokens::clear_token_ping(worker_id(), &token).await;
             if let Err(err) = prepare::prepare_populate_queue(&queue_name).await {
                 error!("Error in prepare_populate_queue: {:?}", err);
             }
@@ -148,23 +136,26 @@ async fn perform_repopulate(token: Token, db: Arc<ConnectionPool>) {
             );
         }
     } else {
-        warn!("Could not verify token for: {:?}", &token.username);
+        warn!("Could not verify token for: {}", &token.username);
     }
 }
 
-async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
+async fn queue_statuses_for_timelines() {
     loop {
-        if let Ok(mut connection) = connect(db.clone()).await {
-            tokens::find_by_worker_id(&mut connection, worker_id())
-                .for_each_concurrent(None, |token| {
-                    let db = db.clone();
-                    async move {
-                        tokio::spawn(async {
-                            perform_repopulate(token, db).await;
-                        });
-                    }
-                })
-                .await;
+        if let Err(err) = tokens::refresh_tokens(worker_id()).await {
+            error!("Error refreshing tokens: {:?}", err);
+        }
+        match tokens::get_tokens(worker_id()).await {
+            Ok(tokens) => {
+                for token in tokens {
+                    tokio::spawn(async {
+                        perform_repopulate(token).await;
+                    });
+                }
+            }
+            Err(err) => {
+                error!("Error getting tokens: {:?}", err);
+            }
         }
         info!(
             "Waiting: {:?}s before processing timelines for tokens...",
@@ -174,18 +165,16 @@ async fn queue_statuses_for_timelines(db: Arc<ConnectionPool>) {
     }
 }
 
-pub async fn perform_queue(db: ConnectionPool) {
-    let db = Arc::new(db);
+pub async fn perform_queue() {
     _ = tokio::spawn(async move {
-        queue_statuses_for_timelines(db).await;
+        queue_statuses_for_timelines().await;
     })
     .await;
 }
 
-pub async fn perform_fetch(db: ConnectionPool) {
-    let db = Arc::new(db);
+pub async fn perform_fetch() {
     _ = tokio::spawn(async move {
-        fetch_contexts_for_tokens_loop(db).await;
+        fetch_contexts_for_tokens_loop().await;
     })
     .await;
 }

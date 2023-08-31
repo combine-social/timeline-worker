@@ -94,7 +94,7 @@ pub async fn schedule_notification_account_statuses(token: &Token) -> Result<(),
                                 original: url.clone(),
                                 created_at: Utc::now(),
                                 index: index as i32,
-                                level: 2, // do not traverse notifications - hence start them at level 2
+                                level: 3, // do not traverse notifications - hence start them at level 3
                             },
                         )
                         .await;

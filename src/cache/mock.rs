@@ -64,3 +64,8 @@ pub async fn delete_keys_with_prefix(cache: &mut Cache, prefix: &String) -> Resu
     }
     Ok(())
 }
+
+pub async fn delete_key(cache: &mut Cache, key: &String) -> Result<(), String> {
+    cache.store.remove(key);
+    Ok(())
+}

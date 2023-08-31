@@ -1,13 +1,13 @@
+use crate::strerr::here;
+
 use super::super::connect::Connection;
 use super::super::registrations::Registration;
 use super::Token;
-use futures::stream::StreamExt; // enable map on stream of futures
-use futures::Stream;
 use sqlx::types::JsonRawValue;
 use sqlx::{postgres::PgRow, FromRow, Row};
 
-pub fn find_by_worker_id(con: &mut Connection, worker_id: i32) -> impl Stream<Item = Token> + '_ {
-    sqlx::query(
+pub async fn find_by_worker_id(con: &mut Connection, worker_id: i32) -> Result<Vec<Token>, String> {
+    let rows = sqlx::query(
         "
                 select
                     t.*,
@@ -19,9 +19,15 @@ pub fn find_by_worker_id(con: &mut Connection, worker_id: i32) -> impl Stream<It
             ",
     )
     .bind(worker_id)
-    .fetch(&mut con.connection)
-    .map(|row| Token::from_row(&row.expect("PgRow unwrap error")))
-    .map(|result| result.expect("Token::from_row error"))
+    .fetch_all(&mut con.connection)
+    .await
+    .map_err(|err| here!(err))?;
+    let tokens: Vec<Token> = rows
+        .iter()
+        .map(Token::from_row)
+        .map(|result| result.expect("Token::from_row error"))
+        .collect();
+    Ok(tokens)
 }
 
 fn raw_value<'a>(row: &'a PgRow, key: &str) -> Result<&'a JsonRawValue, sqlx::Error> {
@@ -48,6 +54,7 @@ impl FromRow<'_, PgRow> for Token {
                 fail_count: row.try_get("fail_count")?,
                 registration,
                 worker_id: row.try_get("worker_id")?,
+                ping_at: row.try_get("ping_at")?,
             }),
             // ColumnNotFound was the least bad error I could find to map to
             Err(error) => Err(sqlx::Error::ColumnNotFound(error.to_string())),
