@@ -1,6 +1,12 @@
 use std::{env, time::Duration};
 
-use crate::{context, federated, home, notification, prepare, repository::tokens::Token, tokens};
+use chrono::Utc;
+
+use crate::{
+    context, federated, home, notification, prepare,
+    repository::tokens::{PingAt, Token},
+    tokens,
+};
 
 fn worker_id() -> i32 {
     env::var("WORKER_ID")
@@ -67,12 +73,22 @@ async fn perform_fetch_contexts(token: Token) {
             "fetch_contexts_for_tokens_loop got token for: {:?}",
             &token.username
         );
+        const TIMEOUT: i64 = 300; // 5 minute timeout
+        if Utc::now()
+            .signed_duration_since(token.latest_ping())
+            .num_seconds()
+            < TIMEOUT
+        {
+            return;
+        }
         tokio::spawn(async move {
+            _ = tokens::ping_token(worker_id(), &token).await;
             while context::fetch_next_context(&token.to_owned())
                 .await
                 .is_ok_and(|more| more)
             {
                 info!("Fetching next context for: {}", &token.username);
+                _ = tokens::ping_token(worker_id(), &token).await;
             }
         });
     } else {
@@ -125,6 +141,7 @@ async fn perform_repopulate(token: Token) {
 
 async fn queue_statuses_for_timelines() {
     loop {
+        _ = tokens::refresh_tokens(worker_id()).await;
         if let Ok(tokens) = tokens::get_tokens(worker_id()).await {
             for token in tokens {
                 tokio::spawn(async {

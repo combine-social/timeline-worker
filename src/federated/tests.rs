@@ -74,6 +74,7 @@ async fn resolves_statuses_that_are_not_cached() {
             sns: Some(SNS::Mastodon),
         },
         worker_id: 1,
+        ping_at: None,
     };
     let result = super::resolve::should_resolve(&token, "https://example.com/id/1").await;
     assert!(result.is_ok());

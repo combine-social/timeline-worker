@@ -54,6 +54,7 @@ impl FromRow<'_, PgRow> for Token {
                 fail_count: row.try_get("fail_count")?,
                 registration,
                 worker_id: row.try_get("worker_id")?,
+                ping_at: row.try_get("ping_at")?,
             }),
             // ColumnNotFound was the least bad error I could find to map to
             Err(error) => Err(sqlx::Error::ColumnNotFound(error.to_string())),

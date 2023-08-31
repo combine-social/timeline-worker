@@ -1,3 +1,5 @@
+use chrono::Utc;
+
 use crate::{
     cache,
     repository::{self, tokens::Token},
@@ -5,6 +7,18 @@ use crate::{
 };
 
 const EXPIRY: usize = 60 * 60 * 24;
+
+pub async fn refresh_tokens(worker_id: i32) -> Result<(), String> {
+    let mut cache = cache::connect().await?;
+    let pool = repository::create_pool().await.map_err(|err| here!(err))?;
+    let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
+    let tokens = repository::tokens::find_by_worker_id(&mut connection, worker_id).await?;
+    for token in tokens.iter() {
+        let key = format!("{}:{}", cache::tokens_prefix(worker_id), token.id);
+        cache::set(&mut cache, &key, token, Some(EXPIRY)).await?;
+    }
+    Ok(())
+}
 
 pub async fn get_tokens(worker_id: i32) -> Result<Vec<Token>, String> {
     let mut cache = cache::connect().await?;
@@ -14,16 +28,6 @@ pub async fn get_tokens(worker_id: i32) -> Result<Vec<Token>, String> {
         .map(|token| serde_json::from_str(token))
         .filter_map(|row| row.ok())
         .collect::<Vec<Token>>();
-    if !tokens.is_empty() {
-        return Ok(tokens);
-    }
-    let pool = repository::create_pool().await.map_err(|err| here!(err))?;
-    let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
-    let tokens = repository::tokens::find_by_worker_id(&mut connection, worker_id).await?;
-    for token in tokens.iter() {
-        let key = format!("{}:{}", cache::tokens_prefix(worker_id), token.id);
-        cache::set(&mut cache, &key, token, Some(EXPIRY)).await?;
-    }
     Ok(tokens)
 }
 
@@ -51,4 +55,13 @@ pub async fn delete_token(worker_id: i32, token: &Token) -> Result<(), String> {
     let pool = repository::create_pool().await.map_err(|err| here!(err))?;
     let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
     repository::tokens::delete(&mut connection, token).await
+}
+
+pub async fn ping_token(worker_id: i32, token: &Token) -> Result<Token, String> {
+    let mut token = token.to_owned();
+    token.ping_at = Some(Utc::now().timestamp() as i32);
+    let mut cache = cache::connect().await?;
+    let key = format!("{}:{}", cache::tokens_prefix(worker_id), token.id);
+    cache::set(&mut cache, &key, &token, Some(EXPIRY)).await?;
+    Ok(token)
 }

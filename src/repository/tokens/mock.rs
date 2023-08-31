@@ -27,6 +27,7 @@ pub async fn find_by_worker_id(
             sns: Some(SNS::Mastodon),
         },
         worker_id: 1,
+        ping_at: None,
     };
     Ok(vec![dummy])
 }
