@@ -57,7 +57,7 @@ fn mode() -> Mode {
     }
 }
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 10)]
+#[tokio::main(flavor = "multi_thread", worker_threads = 1024)]
 async fn main() {
     load_env();
     init_logger();
