@@ -1050,8 +1050,8 @@ dependencies = [
 
 [[package]]
 name = "megalodon"
-version = "0.10.0"
-source = "git+https://github.com/combine-social/megalodon-rs.git?branch=combine-social#b0d85ee79cc49bf5bbf53c765cff41ae0b2e5325"
+version = "0.11.1"
+source = "git+https://github.com/combine-social/megalodon-rs.git?branch=combine-social#5ac2ab296c833200b93e6145d8b86c73c12db428"
 dependencies = [
  "async-trait",
  "chrono",
@@ -1061,6 +1061,7 @@ dependencies = [
  "log",
  "oauth2",
  "rand",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
@@ -1071,6 +1072,7 @@ dependencies = [
  "tokio-util",
  "url",
  "urlencoding",
+ "uuid",
 ]
 
 [[package]]
@@ -1740,9 +1742,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.105"
+version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "693151e1ac27563d6dbcec9dee9fbd5da8539b20fa14ad3752b2e6d363ace360"
+checksum = "6b420ce6e3d8bd882e9b243c6eed35dbc9a6110c9769e74b584e0d68d1f20c65"
 dependencies = [
  "itoa",
  "ryu",
@@ -2200,9 +2202,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.8"
+version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "806fe8c2c87eccc8b3267cbae29ed3ab2d0bd37fca70ab622e46aaa9375ddb7d"
+checksum = "1d68074620f57a0b21594d9735eb2e98ab38b17f80d3fcb189fca266771ca60d"
 dependencies = [
  "bytes",
  "futures-core",
@@ -2330,9 +2332,9 @@ dependencies = [
 
 [[package]]
 name = "url"
-version = "2.4.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50bff7831e19200a85b17131d085c25d7811bc4e186efdaf54bbd132994a88cb"
+checksum = "143b538f18257fac9cad154828a57c6bf5157e1aa604d4816b5995bf6de87ae5"
 dependencies = [
  "form_urlencoded",
  "idna",
@@ -2351,6 +2353,15 @@ name = "utf-8"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
+
+[[package]]
+name = "uuid"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "79daa5ed5740825c40b389c5e50312b9c86df53fccd33f281df655642b43869d"
+dependencies = [
+ "getrandom",
+]
 
 [[package]]
 name = "value-bag"
