@@ -58,12 +58,15 @@ async fn get_notification_accounts(token: &Token) -> Result<Vec<String>, String>
         max_id = page.max_id.clone();
         for notif in page.items.iter() {
             info!("notification: {:?}", &notif);
-            let acct = acct(&notif.account)?;
-            if !accounts.contains(&acct) {
-                count += 1;
-                accounts.push(acct);
-                if count >= max_timeline_count() {
-                    break;
+            if let Some(account) = &notif.account {
+                if let Ok(acct) = acct(account) {
+                    if !accounts.contains(&acct) {
+                        count += 1;
+                        accounts.push(acct);
+                        if count >= max_timeline_count() {
+                            break;
+                        }
+                    }
                 }
             }
         }
