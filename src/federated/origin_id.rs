@@ -24,6 +24,7 @@ impl OriginId for Status {
             SNS::Mastodon => mastodon_origin_id(self),
             SNS::Pleroma => pleroma_origin_id(self).await,
             SNS::Friendica => friendica_origin_id(self),
+            SNS::Firefish => firefish_origin_id(self),
         }
     }
 
@@ -47,6 +48,10 @@ fn host(status: &Status) -> Result<String, String> {
 }
 
 fn mastodon_origin_id(status: &Status) -> Result<String, String> {
+    last_path_component(status.uri.clone())
+}
+
+fn firefish_origin_id(status: &Status) -> Result<String, String> {
     last_path_component(status.uri.clone())
 }
 

@@ -25,6 +25,8 @@ pub enum SNS {
     Pleroma,
     #[serde(rename = "friendica")]
     Friendica,
+    #[serde(rename = "firefish")]
+    Firefish,
 }
 
 impl From<megalodon::SNS> for SNS {
@@ -33,6 +35,7 @@ impl From<megalodon::SNS> for SNS {
             megalodon::SNS::Mastodon => SNS::Mastodon,
             megalodon::SNS::Pleroma => SNS::Pleroma,
             megalodon::SNS::Friendica => SNS::Friendica,
+            megalodon::SNS::Firefish => SNS::Firefish,
         }
     }
 }
@@ -43,6 +46,7 @@ impl From<SNS> for megalodon::SNS {
             SNS::Mastodon => megalodon::SNS::Mastodon,
             SNS::Pleroma => megalodon::SNS::Pleroma,
             SNS::Friendica => megalodon::SNS::Friendica,
+            SNS::Firefish => megalodon::SNS::Firefish,
         }
     }
 }
