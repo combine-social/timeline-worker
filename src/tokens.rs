@@ -1,4 +1,5 @@
 use chrono::Utc;
+use sqlx::{Pool, Postgres};
 
 use crate::{
     cache,
@@ -8,10 +9,9 @@ use crate::{
 
 const EXPIRY: usize = 60 * 60 * 24;
 
-pub async fn refresh_tokens(worker_id: i32) -> Result<(), String> {
+pub async fn refresh_tokens(pool: &Pool<Postgres>, worker_id: i32) -> Result<(), String> {
     let mut cache = cache::connect().await?;
-    let pool = repository::create_pool().await.map_err(|err| here!(err))?;
-    let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
+    let mut connection = repository::connect(pool).await.map_err(|err| here!(err))?;
     let persistent = repository::tokens::find_by_worker_id(&mut connection, worker_id).await?;
     for token in persistent.iter() {
         let key = cache::token_key(worker_id, token.id);
@@ -36,6 +36,7 @@ pub async fn get_tokens(worker_id: i32) -> Result<Vec<Token>, String> {
 }
 
 pub async fn update_token_fail_count(
+    pool: &Pool<Postgres>,
     worker_id: i32,
     token: &Token,
     count: i32,
@@ -46,18 +47,20 @@ pub async fn update_token_fail_count(
     let mut cache = cache::connect().await?;
     let key = format!("{}:{}", cache::tokens_prefix(worker_id), token.id);
     cache::set(&mut cache, &key, token, Some(EXPIRY)).await?;
-    let pool = repository::create_pool().await.map_err(|err| here!(err))?;
-    let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
+    let mut connection = repository::connect(pool).await.map_err(|err| here!(err))?;
     repository::tokens::update_fail_count(&mut connection, token, count).await?;
     Ok(())
 }
 
-pub async fn delete_token(worker_id: i32, token: &Token) -> Result<(), String> {
+pub async fn delete_token(
+    pool: &Pool<Postgres>,
+    worker_id: i32,
+    token: &Token,
+) -> Result<(), String> {
     let mut cache = cache::connect().await?;
     let key = cache::token_key(worker_id, token.id);
     cache::delete_key(&mut cache, &key).await?;
-    let pool = repository::create_pool().await.map_err(|err| here!(err))?;
-    let mut connection = repository::connect(&pool).await.map_err(|err| here!(err))?;
+    let mut connection = repository::connect(pool).await.map_err(|err| here!(err))?;
     repository::tokens::delete(&mut connection, token).await
 }
 

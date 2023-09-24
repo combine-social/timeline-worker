@@ -1,6 +1,7 @@
 use std::{env, time::Duration};
 
 use chrono::Utc;
+use sqlx::{Pool, Postgres};
 
 use crate::{
     context, federated, home, notification, prepare,
@@ -48,10 +49,10 @@ fn max_fail_count() -> i32 {
 /// Check that a token can be used to create an authenticated client
 /// and update the fail count. Delete tokens whose fail count goes
 /// over the set threshold.
-async fn verify_token(token: &Token) -> Result<(), String> {
+async fn verify_token(pool: &Pool<Postgres>, token: &Token) -> Result<(), String> {
     let result = federated::has_verified_authenticated_client(token).await;
     if result.is_ok() {
-        tokens::update_token_fail_count(worker_id(), token, 0).await?;
+        tokens::update_token_fail_count(pool, worker_id(), token, 0).await?;
     } else {
         let fail_count = token.fail_count.unwrap_or(0) + 1;
         if fail_count > max_fail_count() {
@@ -59,16 +60,16 @@ async fn verify_token(token: &Token) -> Result<(), String> {
                 "Fail-count threshold exceeded for {}, deleting",
                 &token.username
             );
-            tokens::delete_token(worker_id(), token).await?;
+            tokens::delete_token(pool, worker_id(), token).await?;
         } else {
-            tokens::update_token_fail_count(worker_id(), token, fail_count).await?;
+            tokens::update_token_fail_count(pool, worker_id(), token, fail_count).await?;
         }
     }
     result
 }
 
-async fn perform_fetch_contexts(token: Token) {
-    if verify_token(&token).await.is_ok() {
+async fn perform_fetch_contexts(pool: &Pool<Postgres>, token: Token) {
+    if verify_token(pool, &token).await.is_ok() {
         info!(
             "fetch_contexts_for_tokens_loop got token for: {:?}",
             &token.username
@@ -96,11 +97,11 @@ async fn perform_fetch_contexts(token: Token) {
     }
 }
 
-async fn fetch_contexts_for_tokens_loop() {
+async fn fetch_contexts_for_tokens_loop(pool: &Pool<Postgres>) {
     loop {
         if let Ok(tokens) = tokens::get_tokens(worker_id()).await {
             for token in tokens {
-                perform_fetch_contexts(token).await;
+                perform_fetch_contexts(pool, token).await;
             }
         }
         info!(
@@ -111,12 +112,12 @@ async fn fetch_contexts_for_tokens_loop() {
     }
 }
 
-async fn perform_repopulate(token: Token) {
+async fn perform_repopulate(pool: &Pool<Postgres>, token: Token) {
     info!(
         "queue_statuses_for_timelines got token for: {}",
         &token.username
     );
-    if verify_token(&token).await.is_ok() {
+    if verify_token(pool, &token).await.is_ok() {
         let queue_name = format!("v2:{}", &token.username);
         if prepare::should_populate_queue(&queue_name).await {
             _ = tokens::clear_token_ping(worker_id(), &token).await;
@@ -140,16 +141,17 @@ async fn perform_repopulate(token: Token) {
     }
 }
 
-async fn queue_statuses_for_timelines() {
+async fn queue_statuses_for_timelines(pool: Pool<Postgres>) {
     loop {
-        if let Err(err) = tokens::refresh_tokens(worker_id()).await {
+        if let Err(err) = tokens::refresh_tokens(&pool.clone(), worker_id()).await {
             error!("Error refreshing tokens: {:?}", err);
         }
         match tokens::get_tokens(worker_id()).await {
             Ok(tokens) => {
                 for token in tokens {
-                    tokio::spawn(async {
-                        perform_repopulate(token).await;
+                    let pool = pool.clone();
+                    tokio::spawn(async move {
+                        perform_repopulate(&pool, token).await;
                     });
                 }
             }
@@ -165,16 +167,18 @@ async fn queue_statuses_for_timelines() {
     }
 }
 
-pub async fn perform_queue() {
+pub async fn perform_queue(pool: Pool<Postgres>) {
+    let pool = pool.clone();
     _ = tokio::spawn(async move {
-        queue_statuses_for_timelines().await;
+        queue_statuses_for_timelines(pool).await;
     })
     .await;
 }
 
-pub async fn perform_fetch() {
+pub async fn perform_fetch(pool: Pool<Postgres>) {
+    let pool = pool.clone();
     _ = tokio::spawn(async move {
-        fetch_contexts_for_tokens_loop().await;
+        fetch_contexts_for_tokens_loop(&pool).await;
     })
     .await;
 }

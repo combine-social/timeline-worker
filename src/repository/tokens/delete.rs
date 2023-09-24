@@ -1,9 +1,10 @@
+use sqlx::{pool::PoolConnection, Postgres};
+
 use crate::strerr::here;
 
-use super::super::connect::Connection;
 use super::Token;
 
-pub async fn delete(con: &mut Connection, token: &Token) -> Result<(), String> {
+pub async fn delete(con: &mut PoolConnection<Postgres>, token: &Token) -> Result<(), String> {
     sqlx::query(
         "
             delete from tokens
@@ -11,7 +12,7 @@ pub async fn delete(con: &mut Connection, token: &Token) -> Result<(), String> {
             ",
     )
     .bind(token.id)
-    .execute(&mut con.connection)
+    .execute(con)
     .await
     .map_err(|err| here!(err))?;
     Ok(())

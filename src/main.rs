@@ -2,6 +2,7 @@ use std::env;
 
 use log::LevelFilter;
 use simplelog::{ColorChoice, CombinedLogger, Config, TermLogger, TerminalMode};
+use sqlx::{Pool, Postgres};
 
 mod cache;
 mod conditional_queue;
@@ -57,17 +58,24 @@ fn mode() -> Mode {
     }
 }
 
+async fn create_pool() -> Pool<Postgres> {
+    repository::create_pool()
+        .await
+        .expect("Failed to create connection pool")
+}
+
 #[tokio::main]
 async fn main() {
     load_env();
     init_logger();
+    let pool = create_pool().await;
 
     match mode() {
         Mode::Schedule => {
-            run_loop::perform_queue().await;
+            run_loop::perform_queue(pool).await;
         }
         Mode::Process => {
-            run_loop::perform_fetch().await;
+            run_loop::perform_fetch(pool).await;
         }
     }
 }

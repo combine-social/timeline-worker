@@ -1,12 +1,16 @@
 use crate::strerr::here;
 
-use super::super::connect::Connection;
 use super::super::registrations::Registration;
 use super::Token;
+use sqlx::pool::PoolConnection;
 use sqlx::types::JsonRawValue;
+use sqlx::Postgres;
 use sqlx::{postgres::PgRow, FromRow, Row};
 
-pub async fn find_by_worker_id(con: &mut Connection, worker_id: i32) -> Result<Vec<Token>, String> {
+pub async fn find_by_worker_id(
+    con: &mut PoolConnection<Postgres>,
+    worker_id: i32,
+) -> Result<Vec<Token>, String> {
     let rows = sqlx::query(
         "
                 select
@@ -19,7 +23,7 @@ pub async fn find_by_worker_id(con: &mut Connection, worker_id: i32) -> Result<V
             ",
     )
     .bind(worker_id)
-    .fetch_all(&mut con.connection)
+    .fetch_all(con)
     .await
     .map_err(|err| here!(err))?;
     let tokens: Vec<Token> = rows
